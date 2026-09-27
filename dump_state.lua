@@ -118,7 +118,7 @@ local function snap_card(c)
     local ab  = c.ability or {}
     local rarity = ctr.rarity
     if type(rarity) == "number" then rarity = num(rarity) end
-    return {
+    local out = {
         key        = ctr.key,
         name       = ab.name or ctr.name,
         set        = ctr.set,
@@ -131,6 +131,13 @@ local function snap_card(c)
         sort_id    = num(c.sort_id),
         sprite     = sprite_of(ctr),                  -- 当前商店卡的图集坐标
     }
+    -- 扑克牌（标准包开出来的）：点数、花色、蜡封，网页拿来核对开包前的预测
+    if (ctr.set == "Default" or ctr.set == "Enhanced") and c.base then
+        out.rank = c.base.value
+        out.suit = c.base.suit
+        out.seal = c.seal
+    end
+    return out
 end
 
 local function snap_area(area)
@@ -186,6 +193,159 @@ local function snap_tags()
         return a.key < b.key
     end)
     return out
+end
+
+--------------------------------------------------
+-- 跳过标签池：网页按种子预测每个底注小盲/大盲的标签（get_next_tag_key，common_events.lua:2241）。
+-- 顺序 = G.P_CENTER_POOLS.Tag：原版按 order 排，SMODS 的新标签追加在后面（game_object.lua:3066）。
+-- 可用性按 get_current_pool 的 Tag 分支（common_events.lua:2317-2381）：
+--   requires 已发现、in_pool、pool_flag、没被挑战 ban。
+-- min_ante 随底注变，交给网页按底注判断。名字用游戏内本地化名。
+--------------------------------------------------
+local function snap_tag_pool()
+    local pool = G.P_CENTER_POOLS and G.P_CENTER_POOLS.Tag
+    if type(pool) ~= "table" or #pool == 0 then return nil end
+    local GAME = G.GAME or {}
+    local flags, banned = GAME.pool_flags or {}, GAME.banned_keys or {}
+    local out = {}
+    for i, v in ipairs(pool) do
+        local ok = true
+        if v.requires and not (G.P_CENTERS[v.requires] and G.P_CENTERS[v.requires].discovered) then ok = false end
+        if ok and SMODS.add_to_pool then
+            local s, in_pool = pcall(SMODS.add_to_pool, v, {})
+            if s and not in_pool then ok = false end
+        end
+        if v.no_pool_flag and flags[v.no_pool_flag] then ok = false end
+        if v.yes_pool_flag and not flags[v.yes_pool_flag] then ok = false end
+        if banned[v.key] then ok = false end
+        out[i] = { k = v.key, n = tag_name(v.key), m = num(v.min_ante), ok = ok }
+    end
+    return out
+end
+
+--------------------------------------------------
+-- 补充包预测要的数据。网页（tools/predict.js 的 predictPacks）按这些自己算，
+-- 这里**不掷任何随机数**：包自己的 create_card 会调 pseudorandom（预兆水晶球、标准包），不能在这里调。
+--------------------------------------------------
+-- 商店里的包：key / 种类 / 张数 / 可选数（card.lua:2045、2062）。名字用游戏内本地化名。
+local function pack_name(ctr, fallback)
+    local ok, s = pcall(localize, { type = "name_text", set = "Other", key = ctr.key:sub(1, -3) })
+    if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then return s end
+    return fallback
+end
+local function snap_boosters()
+    local area = G.shop_booster
+    if not area or not area.cards then return nil end
+    local out = {}
+    for _, c in ipairs(area.cards) do
+        local ctr = c.config and c.config.center
+        if ctr then
+            local ab, cfg = c.ability or {}, ctr.config or {}
+            out[#out + 1] = {
+                key = ctr.key, kind = ctr.kind, name = pack_name(ctr, ab.name or ctr.name),
+                extra = num(ab.extra or cfg.extra), choose = num(ab.choose or cfg.choose),
+                cost = num(c.cost), sprite = sprite_of(ctr),
+            }
+        end
+    end
+    return out
+end
+
+-- 望远镜：天体包第 1 张 = 打出次数最多的可见牌型对应的星球（smods game_object.lua:1681-1696）。
+-- 次数相同取 handlist 里靠前的（严格大于）；找星球用 pairs，最后一个匹配的生效 —— 照抄。
+-- 没有望远镜返回 nil（字段省略）；有望远镜但还没打过牌返回 ""（网页据此区分「没有」和「旧版 dump 不知道」）。
+local function telescope_planet()
+    local GAME = G.GAME
+    if not (GAME and GAME.used_vouchers and GAME.used_vouchers.v_telescope) then return nil end
+    local hand, tally = nil, 0
+    for _, v in ipairs(G.handlist or {}) do
+        local h = GAME.hands and GAME.hands[v]
+        local visible = h and h.visible
+        if SMODS.is_poker_hand_visible then visible = SMODS.is_poker_hand_visible(v) end
+        if h and visible and (h.played or 0) > tally then hand = v; tally = h.played end
+    end
+    if not hand then return "" end
+    local planet = ""
+    for _, v in pairs(G.P_CENTER_POOLS.Planet or {}) do
+        if v.config and v.config.hand_type == hand then planet = v.key end
+    end
+    return planet
+end
+
+-- 标准包（smods game_object.lua:1752-1756，再进 create_card）：
+--   fronts   ：pseudorandom_element(G.P_CARDS, …) 的候选顺序 —— 先按点数/花色的 in_pool 过滤，
+--              再按 sort_id（有的话）或 key 排序（misc_functions.lua pseudorandom_element）
+--   enhanced ：get_current_pool('Enhanced', nil, nil, 'sta')，含 UNAVAILABLE 占位
+--   seals    ：get_current_pool('Seal') + 基础权重 w / get_weight 后的权重 gw（SMODS.poll_seal）
+local function snap_standard()
+    local out = {}
+    if G.P_CARDS then
+        local keys = {}
+        for k, v in pairs(G.P_CARDS) do
+            local keep = true
+            if type(v) == "table" and type(v.in_pool) == "function" then
+                local ok, r = pcall(v.in_pool, v, nil)
+                keep = ok and r and true or false
+            elseif type(v) == "table" then
+                local ok, r = pcall(function()
+                    return not (not SMODS.add_to_pool(SMODS.Ranks[v.value], { initial_deck = false, suit = v.suit })
+                             or not SMODS.add_to_pool(SMODS.Suits[v.suit], { initial_deck = false, rank = v.value }))
+                end)
+                keep = ok and r and true or false
+            end
+            if keep then keys[#keys + 1] = { k = k, v = v } end
+        end
+        if keys[1] and type(keys[1].v) == "table" and keys[1].v.sort_id then
+            table.sort(keys, function(a, b) return a.v.sort_id < b.v.sort_id end)
+        else
+            table.sort(keys, function(a, b) return a.k < b.k end)
+        end
+        local list = {}
+        for i, e in ipairs(keys) do list[i] = { k = e.k, r = e.v.value, s = e.v.suit } end
+        if #list > 0 then out.fronts = list end
+    end
+    local okp, pool = pcall(get_current_pool, "Enhanced", nil, nil, "sta")
+    if okp and type(pool) == "table" then
+        local t = {}
+        for i, k in ipairs(pool) do t[i] = k end
+        out.enhanced = t
+    end
+    local oks, seals = pcall(get_current_pool, "Seal")
+    if oks and type(seals) == "table" then
+        local t = {}
+        for i, v in ipairs(seals) do
+            if v == "UNAVAILABLE" then
+                t[i] = { k = v }
+            else
+                local key = type(v) == "table" and v.key or v
+                local s = G.P_SEALS and G.P_SEALS[key]
+                local w = (type(v) == "table" and v.weight) or (s and s.weight) or 10
+                local gw = w
+                if s and s.get_weight then
+                    local okw, r = pcall(s.get_weight, s)
+                    if okw and type(r) == "number" then gw = r end
+                end
+                t[i] = { k = key, w = num(w), gw = num(gw) }
+            end
+        end
+        out.seals = t
+    end
+    -- 附魔、蜡封的游戏内本地化名（网页显示用）
+    local names = {}
+    local function loc(set, key, into)
+        local ok, s = pcall(localize, { type = "name_text", set = set, key = key })
+        if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then names[into] = s end
+    end
+    for _, k in ipairs(out.enhanced or {}) do if k ~= "UNAVAILABLE" then loc("Enhanced", k, k) end end
+    for _, e in ipairs(out.seals or {}) do if e.k ~= "UNAVAILABLE" then loc("Other", string.lower(e.k) .. "_seal", e.k) end end
+    if next(names) then out.names = names end
+    return next(out) and out or nil
+end
+
+-- 当前打开着的包是哪个（SMODS.OPENED_BOOSTER，card.lua:2043）
+local function opened_booster_key()
+    local b = SMODS.OPENED_BOOSTER
+    return b and b.config and b.config.center and b.config.center.key or nil
 end
 
 --------------------------------------------------
@@ -318,6 +478,8 @@ local function build_sprites(pools)
         end
     end
     add(pools.joker or {}); add(pools.consumable or {})
+    -- 灵魂牌 / 黑洞：隐藏卡，不在池子里，补充包却能开出来
+    add({ { pool = { "c_soul", "c_black_hole" } } })
     return any and sp or nil
 end
 
@@ -401,6 +563,8 @@ local function build_loc(pools)
             for _, k in ipairs(p.pool or {}) do add(k) end
         end
     end
+    -- 灵魂牌 / 黑洞是隐藏卡，不在任何池子里，但补充包能开出来（create_card 的 soulable 分支）
+    add("c_soul"); add("c_black_hole")
     return any and loc or nil
 end
 
@@ -440,7 +604,9 @@ local function build()
     return {
         meta = {
             -- 2: owned.tags。网页据此区分「没有标签」和「旧版 dump 还没有这个字段」
-            schema        = 2,
+            -- 3: tag_pool + run.blind_tags / blind_states（跳过标签预测）
+            -- 4: packs（补充包预测）+ 扑克牌的 rank / suit / seal
+            schema        = 4,
             -- dumped_at 故意不在这里填：它每秒变一次，会把 tick() 里
             -- 「内容没变就不写盘」的比对彻底架空（踩过：96 条记录里 92 条是噪音）。
             -- 只在确认要写盘时才盖时间戳。
@@ -457,6 +623,23 @@ local function build()
             dollars     = num(GAME.dollars),
             state       = num(G.STATE),
             back        = GAME.selected_back and GAME.selected_back.name or nil,
+            -- 本底注实际给的跳过标签和三个盲注的状态（Select / Skipped / Defeated / Upcoming …）
+            blind_tags   = map(GAME.round_resets and GAME.round_resets.blind_tags),
+            blind_states = map(GAME.round_resets and GAME.round_resets.blind_states),
+        },
+
+        -- 跳过标签池（见 snap_tag_pool）。24 项，便宜，每次都带上
+        tag_pool = snap_tag_pool(),
+
+        -- 补充包（见 snap_boosters 等）。std（标准包的牌面顺序 / 附魔池 / 蜡封池）在 tick 里按商店缓存补上
+        packs = {
+            list             = snap_boosters(),
+            size_mod         = num(mods.booster_size_mod),
+            choice_mod       = num(mods.booster_choice_mod),
+            telescope_planet = telescope_planet(),
+            -- 打开着的包：实际开出来的牌 + 是哪个包（网页用来核对开包前的预测）
+            open             = G.pack_cards and snap_area(G.pack_cards) or nil,
+            opened           = G.pack_cards and opened_booster_key() or nil,
         },
 
         -- 流状态：字符串形式的全精度 double，见 f17 的注释
@@ -671,11 +854,59 @@ end
 local CATALOG      = MOD_PATH .. "catalog.dat"
 local catalog_lang = nil
 
+-- 网页能切换中 / 英文，两种名字都要有。localize 只给当前游戏语言的名字，
+-- 所以直接读游戏本体的本地化文件（在 exe 里的 .love，love.filesystem 能读；文件就是 return { … }，没有副作用）。
+-- 只覆盖原版的卡；模组卡在原版文件里找不到，退回 localize 的当前语言名 / 内部名。
+local function load_game_loc(lang)
+    local ok, t = pcall(function()
+        local chunk = love.filesystem.load("localization/" .. lang .. ".lua")
+        return chunk and chunk()
+    end)
+    return (ok and type(t) == "table" and type(t.descriptions) == "table") and t.descriptions or nil
+end
+
+-- 返回 { en = {key → 名字}, zh = {…} }：小丑、塔罗、星球、幻灵、补充包、附魔、版本、标签、蜡封
+local function bilingual_names()
+    local src = { en = load_game_loc("en-us"), zh = load_game_loc("zh_CN") }
+    local out = { en = {}, zh = {} }
+    local cur = (G.SETTINGS and G.SETTINGS.language or ""):sub(1, 2) == "zh" and "zh" or "en"
+    local function nm(d, set, key)
+        local e = d and d[set] and d[set][key]
+        local n = type(e) == "table" and e.name or nil
+        return type(n) == "string" and n ~= "" and n or nil
+    end
+    local function put(key, set, lockey, fallback_en)
+        for lang, d in pairs(src) do
+            local n = nm(d, set, lockey)
+            if not n and lang == cur then
+                local ok, s = pcall(localize, { type = "name_text", set = set, key = lockey })
+                if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then n = s end
+            end
+            if not n and lang == "en" then n = fallback_en end
+            if n then out[lang][key] = n end
+        end
+    end
+    for key, c in pairs(G.P_CENTERS or {}) do
+        local set = c.set
+        if set == "Joker" or set == "Tarot" or set == "Planet" or set == "Spectral"
+           or set == "Enhanced" or set == "Edition" then
+            put(key, set, key, c.name)
+        elseif set == "Booster" then
+            put(key, "Other", key:sub(1, -3), c.name)      -- p_arcana_normal_1 → Other.p_arcana_normal
+        end
+    end
+    for key, t in pairs(G.P_TAGS or {}) do put(key, "Tag", key, t.name) end
+    for key in pairs(G.P_SEALS or {}) do put(key, "Other", string.lower(key) .. "_seal", key .. " Seal") end
+    return out
+end
+
 local function write_catalog()
     local lang = (G.SETTINGS and G.SETTINGS.language) or ""
     if catalog_lang == lang then return end
     local pool = G.P_CENTER_POOLS and G.P_CENTER_POOLS.Joker
     if type(pool) ~= "table" or #pool == 0 then return end
+    local okn, names = pcall(bilingual_names)
+    if not okn then log_once("bilingual_names 抛异常: " .. tostring(names)); names = nil end
 
     local list = {}
     for _, c in ipairs(pool) do
@@ -691,7 +922,20 @@ local function write_catalog()
         end
     end
 
-    local ok, out = pcall(JSON.encode, { lang = lang, jokers = list })
+    -- 塔罗 / 星球 / 幻灵牌（含隐藏的灵魂牌、黑洞）的本地化名：网页商店、队列、补充包里统一显示中文名。
+    -- 不混进 jokers，免得「高亮关注」的搜索结果里冒出消耗牌。
+    local cons = {}
+    for _, set in ipairs({ "Tarot", "Planet", "Spectral" }) do
+        for _, c in ipairs((G.P_CENTER_POOLS and G.P_CENTER_POOLS[set]) or {}) do
+            if c.key then
+                local ok2, lname = pcall(localize, { type = "name_text", set = set, key = c.key })
+                if not ok2 or type(lname) ~= "string" or lname == "" or lname == "ERROR" then lname = nil end
+                cons[#cons + 1] = { key = c.key, name = c.name, lname = lname, set = set, sprite = sprite_of(c) }
+            end
+        end
+    end
+
+    local ok, out = pcall(JSON.encode, { lang = lang, jokers = list, consumables = cons, names = names })
     if not ok then log_once("catalog JSON.encode 失败: " .. tostring(out)); return end
     local wrote, werr = NFS.write(CATALOG, out)
     if wrote then catalog_lang = lang else log_once("catalog.dat 写入失败: " .. tostring(werr)) end
@@ -750,12 +994,16 @@ local function tick(now)
 
         local oks, sprites = pcall(build_sprites, cache.pools)
         if oks then cache.sprites = sprites else log_once("build_sprites 抛异常: " .. tostring(sprites)) end
+
+        local okd, std = pcall(snap_standard)
+        if okd then cache.std = std else log_once("snap_standard 抛异常: " .. tostring(std)) end
     end
     t.pools       = cache.pools
     t.poll_config = cache.poll_config
     t.loc         = cache.loc
     t.editions    = cache.editions
     t.sprites     = cache.sprites
+    if t.packs then t.packs.std = cache.std end
     t.meta.pools_fresh = in_shop and true or false
 
     -- 图集图片不在这里导出：直接从 Balatro.exe 提取了原版 2x 图集到 web/atlas/

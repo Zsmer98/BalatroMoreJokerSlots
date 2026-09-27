@@ -101,6 +101,13 @@
     background: var(--panel); border-radius: 10px; border: 1px dashed var(--line);
   }
   .mods { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* 语言切换：中文 / EN */
+  .lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; flex: none; }
+  .lang-switch button { background: var(--panel2); color: var(--muted); border: none; padding: 4px 10px;
+                        font: inherit; font-size: 12px; cursor: pointer; }
+  .lang-switch button + button { border-left: 1px solid var(--line); }
+  .lang-switch button:hover { color: var(--ink); }
+  .lang-switch button.on { background: #3b5563; color: var(--ink); font-weight: 700; cursor: default; }
   .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
 
   /* 负片强化：整卡紫色辉光 + 角标 + 轻脉动，一眼可辨 */
@@ -153,9 +160,12 @@
   /* 深度选择 */
   .pager { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: normal;
            flex-wrap: wrap; justify-content: flex-end; }
-  /* 窄屏时控件整组换行，不要把「深度 [40] 次」从中间拆开，标题也不折行 */
+  /* 窄屏时控件整组换行，不要把「深度 [40] 次」从中间拆开，标题也不折行。
+     标题栏本身允许换行：英文标题更长，放不下时右边的控件组整体换到下一行（靠右），不撑出横向滚动 */
   .depth-ctl { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sec-title2 { flex-wrap: wrap; row-gap: 6px; }
   .sec-title2 > span:first-child { white-space: nowrap; }
+  .sec-title2 > .pager { margin-left: auto; }
   .pager select, .pager .depth-input {
     background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
     border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer; font-family: inherit;
@@ -194,6 +204,54 @@
   .aura-cell.poly .n { color: #ffd76a; font-weight: 700; }
   .aura-next { color: #ffd76a; font-weight: 700; text-transform: none; letter-spacing: normal; }
   .aura-note { color: var(--muted); font-size: 12px; margin: 8px 2px 0; text-transform: none; letter-spacing: normal; }
+
+  /* 跳过标签预测：一行负片汇总 + 可展开的各底注标签表 */
+  .ta-sum { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+  .ta-neg {
+    background: linear-gradient(120deg, #7a4bb5, #c07fe0); color: #fff; font-weight: 700;
+    padding: 2px 9px; border-radius: 12px; font-size: 12px; white-space: nowrap;
+  }
+  .ta-neg.now { box-shadow: 0 0 0 2px #ffd76a; }
+  .ta-note { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .ta-toggle {
+    background: var(--panel2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 6px; padding: 2px 9px; font: inherit; font-size: 12px; cursor: pointer;
+    text-transform: none; letter-spacing: normal;
+  }
+  .ta-toggle:hover { color: var(--ink); }
+  .ta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 10px; }
+  .ta-cell { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 12px; line-height: 1.5; }
+  .ta-cell.past { opacity: .4; }
+  .ta-cell.cur { border-color: #ffd76a; box-shadow: inset 0 0 0 1px #ffd76a; }
+  .ta-h { color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; }
+  .ta-t { display: flex; gap: 6px; align-items: baseline; white-space: nowrap; overflow: hidden; }
+  .ta-t i { font-style: normal; color: var(--muted); font-size: 11px; flex: none; }
+  .ta-t b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .ta-t.neg b { background: linear-gradient(120deg, #7a4bb5, #c07fe0); color: #fff; padding: 0 6px; border-radius: 4px; }
+  .ta-t.dbl b { color: #ffd76a; }
+  .ta-t small { color: var(--muted); font-size: 10px; flex: none; }
+
+  /* 补充包预测：每个包一块，卡片沿用 .card */
+  .packs { display: flex; flex-direction: column; gap: 12px; }
+  .pack { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .pack-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 8px; }
+  .pack-h b { font-size: 14px; }
+  .pack-h small { color: var(--muted); font-size: 12px; }
+  .pack-note { font-size: 12px; color: #ffd76a; }
+  .pack-note.muted { color: var(--muted); }
+  .pack .cards { justify-content: flex-start; }
+  .pack-verify { font-size: 13px; font-weight: 700; }
+  .pack-verify.ok { color: #4caf72; }
+  .pack-verify.bad { color: #ff6b6b; }
+  /* 扑克牌：没有卡图，用大号点数 + 花色代替 */
+  .pc-face { margin: 6px auto 2px; width: 83px; height: 112px; border-radius: 8px; background: #f4efe6;
+             display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800;
+             font-family: Georgia, "Times New Roman", serif; }
+  .pc-face.red { color: #d63031; }
+  .pc-face.black { color: #2d3436; }
+  .seal { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; align-self: flex-start; }
+  .seal-Red { background: #e74c3c; color: #fff; } .seal-Blue { background: #3498db; color: #fff; }
+  .seal-Gold { background: #f1c40f; color: #111; } .seal-Purple { background: #9b59b6; color: #fff; }
 
   /* 高亮关注：搜索框 + 下拉多选 + 已选卡片条 */
   .watch { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
@@ -265,23 +323,239 @@
 <script src="/tools/luajit_rng.js"></script>
 <script src="/tools/predict.js"></script>
 <script>
-const RARITY = {
-  "1": { name: "普通", color: "var(--r1)" },
-  "2": { name: "罕见", color: "var(--r2)" },
-  "3": { name: "稀有", color: "var(--r3)" },
-  "4": { name: "传奇", color: "var(--r4)" },
+// ================= 语言（中文 / English）=================
+// 界面文字都在 I18N 里。卡牌、标签、包、附魔、蜡封、版本的名字优先用 catalog.dat 里的
+// 游戏本体中英文官方名（CAT_NAMES，mod 读 localization/en-us.lua、zh_CN.lua 得来），
+// 没有时用下面 NAMES_BUILTIN 里抄来的官方名兜底。
+// 选择存在 localStorage（mjs_lang）；没选过就跟随游戏语言（catalog.dat 的 lang），再没有就跟随浏览器语言。
+const I18N = {
+  zh: {
+    title: "MoreJokerSlots 商店预测",
+    connecting: "正在连接游戏数据…",
+    waiting: "等待 state.dat…",
+    "status.ok": "已连接",
+    "status.readErr": (m) => `无法读取 state.dat（游戏在运行吗？在局内吗？）— ${m}`,
+    "status.renderErr": (m) => `页面渲染出错（每秒重试，详情见控制台）— ${m}`,
+    "meta.pred": (n) => `预测 ${n} 次`,
+    "meta.ms": (web, ms) => `${web ? "网页端" : "mod 端"}算 ${ms}ms`,
+    "meta.snap": (tm) => `快照 @ ${tm}`,
+    "hdr.seed": "种子", "hdr.ante": "底注 Ante", "hdr.money": "金钱", "hdr.reroll": "下次 Reroll",
+    "mod.slots": (n) => `槽位 ${n}`, "mod.illusion": "幻象", "mod.edRate": (x) => `版本率 ×${x}`, "mod.showman": "马戏团长",
+    "rar.1": "普通", "rar.2": "罕见", "rar.3": "稀有", "rar.4": "传奇",
+    "set.Joker": "小丑", "set.Tarot": "塔罗牌", "set.Planet": "星球牌", "set.Spectral": "幻灵牌",
+    "set.Base": "扑克牌", "set.Enhanced": "附魔牌", "set.Default": "扑克牌",
+    "card.emptyPool": "（空池兜底）", "card.fallback": "牌",
+    "badge.neg": "★ 负片",
+    "badge.negtag": (k) => `负片标签 #${k}`,
+    "badge.negtagTitle": (k) => `第 ${k} 个负片标签会用在这张：变成负片，并且免费`,
+    "watch.badge": "★ 关注",
+    "tags.title": "当前标签", "tags.titleN": (kinds, total) => `当前标签 · ${kinds} 种 ${total} 个`,
+    "tags.restart": "需要重启游戏后才有标签数据", "tags.none": "当前没有标签",
+    "aura.title": "光环预测", "aura.none": (n) => `${n} 张内没有多彩`, "aura.nextIs": "下一张就是多彩 ★",
+    "aura.until": (n) => `还差 ${n} 张到多彩`, "aura.nth": (n) => `第 ${n} 张`,
+    "aura.fresh": "本局还没用过光环，以上是从第一张算起",
+    "ta.title": "跳过标签预测", "ta.expand": "查看各底注全部标签 ▾", "ta.collapse": "收起各底注标签 ▴",
+    "ta.upcoming": "接下来的负片标签：", "ta.none": (n) => `到第 ${n} 底注为止都没有还能拿的负片标签`,
+    "ta.chip": (a, blind, now) => `底注 ${a} · ${blind}${now ? "（本底注）" : ""}`,
+    "ta.small": "小盲", "ta.big": "大盲", "ta.s": "小", "ta.b": "大",
+    "ta.skipped": "已跳过", "ta.defeated": "已打", "ta.ante": (a) => `底注 ${a}`, "ta.current": "当前",
+    "ta.note": (n) => `每个底注的两个标签只由种子决定，和怎么打无关（算到第 ${n} 底注）`,
+    "ta.noteEst": "现在按「蓝图和四种版本都已发现」估算，重启游戏后按你的档案精确计算",
+    sep: "；",
+    "shop.title": "当前商店", "shop.none": "当前不在商店",
+    "packs.title": "补充包（每个都按「下一个就开它」算）", "packs.titleOpen": "补充包",
+    "packs.opening": (n) => `正在打开：${n}`,
+    "packs.ok": "✓ 和开包前的预测一致", "packs.bad": "✗ 和开包前的预测不一致",
+    "packs.taken": (n, list) => `（已选走 ${n} 张：${list}）`,
+    "packs.before": "开包前的预测：", "packs.noMemo": "没有记录到开包前的预测（页面是在开包之后才打开的？）",
+    "packs.meta": (size, choose) => `开 ${size} 张 · 选 ${choose} 张`,
+    "packs.same": (list) => `和第 ${list} 个包是同一种：先开的那个才是这些，后开的会接着往下抽`,
+    "packs.telescope": "望远镜：第 1 张要重启游戏后才准",
+    "packs.soul": (n) => `灵魂牌会变出：${n}（如果它是本局下一张被使用的灵魂牌）`,
+    "packs.note": "已持有的牌和商店里正摆着的牌不会从包里开出来（有马戏团长除外），所以刷新商店、买卖牌之后，包的内容可能会变",
+    "packs.unknown": "不认识的包（模组包？）",
+    "packs.std_restart": "标准包要重启游戏后才能预测（需要新版 mod 导出的牌面顺序和附魔、蜡封池）",
+    "packs.unsupported": (k) => `不支持的包种类：${k}`,
+    "packs.generic": "补充包",
+    "pc.plain": "普通牌", "pc.seal": (s) => `${s} 蜡封`,
+    "neg.btn": "负片覆盖", "neg.btnTitle": "按手上的负片标签（含双倍标签的复制），标出后面哪些商店小丑会变成负片",
+    "neg.head": (n, f) => `负片标签 <b>${n}</b> 个（${f}）`,
+    "neg.have": (n) => `已有 ${n} 个`, "neg.skip": "跳过拿 1 个", "neg.dbl": (n) => `${n} 个双倍标签各复制 1 个`, "neg.plus": " + ",
+    "neg.useless": (n) => `：展示的 ${n} 次 reroll 里用不上（没有轮到负片的普通版本小丑）`,
+    "neg.all": (n, m, left) => `：展示的 ${n} 次 reroll 里 <b>${m}</b> 张普通版本小丑全部覆盖，还剩 <b>${left}</b> 个`,
+    "neg.until": (r, slot) => `：覆盖到 <b>R+${r} 第 ${slot} 格</b>`,
+    "neg.n1": "自带版本的小丑不吃标签，直接跳过", "neg.n2": "从 R+1 算起",
+    "neg.other": (n) => `你还有 ${n} 个闪箔/镭射/多彩标签，它们排在前面，会先用掉前 ${n} 张（已扣除）`,
+    "neg.unknown": "快照缺版本数据，没法排除自带版本的小丑，结果可能偏前",
+    "neg.big": "跳过大盲的话，下一个商店在打完 Boss 之后，底注 +1 换了一条队列（打完 Boss 页面会自动更新）",
+    "q.title": "预测队列", "q.titleN": (n, mod) => `预测队列 · 共 ${n} 次${mod ? "（mod 端）" : ""}`,
+    "q.none": "暂无预测（需在局内，且快照里有卡池数据）",
+    "q.depth": "深度", "q.custom": "自定义", "q.times": "次",
+    "w.title": "高亮关注", "w.titleN": (n) => `高亮关注 · ${n} 张`,
+    "w.placeholder": "搜索小丑（中文 / 英文），点击添加，可多选",
+    "w.empty": "还没有关注的小丑 —— 在搜索框里输入名字，点击结果即可添加（可多选）",
+    "w.inShop": "当前商店里就有！", "w.first": (r, n) => `最早 R+${r} · 共 ${n} 次`,
+    "w.legend": "传奇 · 商店不会出现", "w.legendTitle": "传奇小丑不在商店的稀有度表里，只能从灵魂牌开出",
+    "w.notInPool": "不在当前卡池（已拥有、未解锁等）", "w.notWithin": (n) => `${n} 次内未出现`,
+    "w.chipTitle": "点击跳到它最早出现的位置（商店或队列）", "w.remove": "取消关注",
+    "w.locked": "未解锁", "w.noMatch": "没有匹配的小丑",
+  },
+  en: {
+    title: "MoreJokerSlots Shop Predictor",
+    connecting: "Connecting to game data…",
+    waiting: "Waiting for state.dat…",
+    "status.ok": "Connected",
+    "status.readErr": (m) => `Can't read state.dat (is the game running, and are you in a run?) — ${m}`,
+    "status.renderErr": (m) => `Render error (retrying every second, see console) — ${m}`,
+    "meta.pred": (n) => `${n} rerolls predicted`,
+    "meta.ms": (web, ms) => `${web ? "web" : "mod"}: ${ms}ms`,
+    "meta.snap": (tm) => `snapshot @ ${tm}`,
+    "hdr.seed": "Seed", "hdr.ante": "Ante", "hdr.money": "Money", "hdr.reroll": "Next reroll",
+    "mod.slots": (n) => `${n} slots`, "mod.illusion": "Illusion", "mod.edRate": (x) => `Edition rate ×${x}`, "mod.showman": "Showman",
+    "rar.1": "Common", "rar.2": "Uncommon", "rar.3": "Rare", "rar.4": "Legendary",
+    "set.Joker": "Joker", "set.Tarot": "Tarot", "set.Planet": "Planet", "set.Spectral": "Spectral",
+    "set.Base": "Playing card", "set.Enhanced": "Enhanced", "set.Default": "Playing card",
+    "card.emptyPool": "(empty-pool fallback)", "card.fallback": "Card",
+    "badge.neg": "★ Negative",
+    "badge.negtag": (k) => `Neg. Tag #${k}`,
+    "badge.negtagTitle": (k) => `Negative Tag #${k} lands here: this card becomes Negative and free`,
+    "watch.badge": "★ Watched",
+    "tags.title": "Tags", "tags.titleN": (kinds, total) => `Tags · ${kinds} kinds, ${total} total`,
+    "tags.restart": "Restart the game to get tag data", "tags.none": "No tags",
+    "aura.title": "Aura forecast", "aura.none": (n) => `No Polychrome in the next ${n}`, "aura.nextIs": "Next one is Polychrome ★",
+    "aura.until": (n) => `${n} more until Polychrome`, "aura.nth": (n) => `#${n}`,
+    "aura.fresh": "Aura hasn't been used this run yet; counting from the first one",
+    "ta.title": "Skip tag forecast", "ta.expand": "Show all tags per ante ▾", "ta.collapse": "Hide tags per ante ▴",
+    "ta.upcoming": "Upcoming Negative Tags:", "ta.none": (n) => `No Negative Tag left through ante ${n}`,
+    "ta.chip": (a, blind, now) => `Ante ${a} · ${blind}${now ? " (this ante)" : ""}`,
+    "ta.small": "Small Blind", "ta.big": "Big Blind", "ta.s": "S", "ta.b": "B",
+    "ta.skipped": "skipped", "ta.defeated": "played", "ta.ante": (a) => `Ante ${a}`, "ta.current": "current",
+    "ta.note": (n) => `Both tags of every ante depend only on the seed, not on how you play (shown through ante ${n})`,
+    "ta.noteEst": "Assuming Blueprint and all four editions are discovered; restart the game for exact results from your profile",
+    sep: "; ",
+    "shop.title": "Current shop", "shop.none": "Not in a shop",
+    "packs.title": "Booster packs (each one assumes it's the next pack you open)", "packs.titleOpen": "Booster pack",
+    "packs.opening": (n) => `Opening: ${n}`,
+    "packs.ok": "✓ Matches the prediction made before opening", "packs.bad": "✗ Differs from the prediction made before opening",
+    "packs.taken": (n, list) => `(${n} already taken: ${list})`,
+    "packs.before": "Predicted before opening:", "packs.noMemo": "No prediction was recorded before opening (was the page opened after the pack?)",
+    "packs.meta": (size, choose) => `${size} cards · choose ${choose}`,
+    "packs.same": (list) => `Same kind as pack #${list}: whichever you open first gets these cards, the other one continues the sequence`,
+    "packs.telescope": "Telescope: card 1 is only exact after restarting the game",
+    "packs.soul": (n) => `The Soul would create: ${n} (if it's the next Soul used this run)`,
+    "packs.note": "Cards you hold or that sit in the shop can't come out of packs (unless you have Showman), so rerolling or buying/selling can change what's inside",
+    "packs.unknown": "Unknown pack (modded?)",
+    "packs.std_restart": "Standard packs need a game restart (the new mod exports the card order and the enhancement and seal pools)",
+    "packs.unsupported": (k) => `Unsupported pack kind: ${k}`,
+    "packs.generic": "Booster pack",
+    "pc.plain": "Plain card", "pc.seal": (s) => `${s} Seal`,
+    "neg.btn": "Negative coverage", "neg.btnTitle": "Mark which upcoming shop Jokers your Negative Tags (including Double Tag copies) will turn Negative",
+    "neg.head": (n, f) => `<b>${n}</b> Negative Tags (${f})`,
+    "neg.have": (n) => `${n} owned`, "neg.skip": "1 from the next skip", "neg.dbl": (n) => `${n} Double Tag copies`, "neg.plus": " + ",
+    "neg.useless": (n) => `: none of the ${n} shown rerolls get one (no eligible base-edition Jokers)`,
+    "neg.all": (n, m, left) => `: all <b>${m}</b> base-edition Jokers in the ${n} shown rerolls are covered, <b>${left}</b> left over`,
+    "neg.until": (r, slot) => `: covers through <b>R+${r} slot ${slot}</b>`,
+    "neg.n1": "Jokers that already have an edition are skipped", "neg.n2": "counting from R+1",
+    "neg.other": (n) => `You also have ${n} Foil/Holographic/Polychrome Tags queued ahead; they take the first ${n} (already subtracted)`,
+    "neg.unknown": "The snapshot has no edition data, so Jokers with editions can't be excluded; results may be too early",
+    "neg.big": "If you skip the Big Blind, the next shop comes after the Boss in the next ante, which has a different queue (the page updates once the Boss is beaten)",
+    "q.title": "Predicted queue", "q.titleN": (n, mod) => `Predicted queue · ${n} rerolls${mod ? " (mod)" : ""}`,
+    "q.none": "No prediction yet (needs an active run with pool data in the snapshot)",
+    "q.depth": "Depth", "q.custom": "Custom", "q.times": "rerolls",
+    "w.title": "Watchlist", "w.titleN": (n) => `Watchlist · ${n}`,
+    "w.placeholder": "Search Jokers (English / 中文), click to add, multi-select",
+    "w.empty": "No watched Jokers yet: type a name in the search box and click a result to add it (multi-select)",
+    "w.inShop": "In the shop right now!", "w.first": (r, n) => `First at R+${r} · ${n}× total`,
+    "w.legend": "Legendary · never in the shop", "w.legendTitle": "Legendary Jokers aren't in the shop's rarity table; they only come from The Soul",
+    "w.notInPool": "Not in the current pool (owned, locked, …)", "w.notWithin": (n) => `Not in the next ${n}`,
+    "w.chipTitle": "Click to jump to its first appearance (shop or queue)", "w.remove": "Remove",
+    "w.locked": "Locked", "w.noMatch": "No matching Jokers",
+  },
 };
+// 官方名兜底（游戏本体 localization/en-us.lua、zh_CN.lua 里抄来的）。catalog.dat 有 names 时以它为准
+const NAMES_BUILTIN = {
+  en: {
+    e_foil: "Foil", e_holo: "Holographic", e_polychrome: "Polychrome", e_negative: "Negative",
+    m_bonus: "Bonus Card", m_mult: "Mult Card", m_wild: "Wild Card", m_glass: "Glass Card", m_steel: "Steel Card",
+    m_stone: "Stone Card", m_gold: "Gold Card", m_lucky: "Lucky Card",
+    Red: "Red Seal", Blue: "Blue Seal", Gold: "Gold Seal", Purple: "Purple Seal",
+    c_soul: "The Soul", c_black_hole: "Black Hole",
+    p_arcana_normal: "Arcana Pack", p_arcana_jumbo: "Jumbo Arcana Pack", p_arcana_mega: "Mega Arcana Pack",
+    p_celestial_normal: "Celestial Pack", p_celestial_jumbo: "Jumbo Celestial Pack", p_celestial_mega: "Mega Celestial Pack",
+    p_spectral_normal: "Spectral Pack", p_spectral_jumbo: "Jumbo Spectral Pack", p_spectral_mega: "Mega Spectral Pack",
+    p_standard_normal: "Standard Pack", p_standard_jumbo: "Jumbo Standard Pack", p_standard_mega: "Mega Standard Pack",
+    p_buffoon_normal: "Buffoon Pack", p_buffoon_jumbo: "Jumbo Buffoon Pack", p_buffoon_mega: "Mega Buffoon Pack",
+  },
+  zh: {
+    e_foil: "闪箔", e_holo: "镭射", e_polychrome: "多彩", e_negative: "负片",
+    m_bonus: "奖励牌", m_mult: "倍率牌", m_wild: "万能牌", m_glass: "玻璃牌", m_steel: "钢铁牌",
+    m_stone: "石头牌", m_gold: "黄金牌", m_lucky: "幸运牌",
+    Red: "红色蜡封", Blue: "蓝色蜡封", Gold: "金色蜡封", Purple: "紫色蜡封",
+    c_soul: "灵魂", c_black_hole: "黑洞",
+    p_arcana_normal: "秘术包", p_arcana_jumbo: "巨型秘术包", p_arcana_mega: "超级秘术包",
+    p_celestial_normal: "天体包", p_celestial_jumbo: "巨型天体包", p_celestial_mega: "超级天体包",
+    p_spectral_normal: "幻灵包", p_spectral_jumbo: "巨型幻灵包", p_spectral_mega: "超级幻灵包",
+    p_standard_normal: "标准包", p_standard_jumbo: "巨型标准包", p_standard_mega: "超级标准包",
+    p_buffoon_normal: "小丑包", p_buffoon_jumbo: "巨型小丑包", p_buffoon_mega: "超级小丑包",
+  },
+};
+
+let LANG_PICKED = (() => { try { const v = localStorage.getItem("mjs_lang"); return v === "zh" || v === "en" ? v : null; } catch { return null; } })();
+let LANG = LANG_PICKED || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
+let CAT_NAMES = null;   // catalog.dat 的 names：{ en: {key → 名字}, zh: {…} }
+function t(key, ...args) {
+  const v = I18N[LANG][key] ?? I18N.zh[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+}
+// 标签、包、附魔、蜡封、版本等（不是卡牌本身）的名字
+const locName = (key, fallback) => (CAT_NAMES?.[LANG]?.[key]) || NAMES_BUILTIN[LANG][key] || fallback || key;
+const rarityName = (r) => I18N[LANG]["rar." + r] || String(r ?? "");
+const setName = (set) => I18N[LANG]["set." + set] || set || "?";
+const edName = (key) => locName(key);
+
+function applyLangStatic() {
+  document.documentElement.lang = LANG === "zh" ? "zh" : "en";
+  document.title = t("title");
+  if (!lastState) {   // 还没连上游戏：更新初始的占位文字
+    const b = document.querySelector("#app > .banner");
+    if (b) b.textContent = t("connecting");
+    const st = document.getElementById("status");
+    if (st && !st.dataset.set) st.textContent = t("waiting");
+  }
+}
+// 切换语言：所有容器重建一遍（关注区的输入框占位符、标题也要换）
+function relang(l) {
+  LANG = l;
+  applyLangStatic();
+  const app = document.getElementById("app");
+  if (app && lastState) app.innerHTML = "";
+  lastTagsHtml = null; lastQueuePred = undefined; watchChipsSig = null;
+  applyWatchStyle();
+  draw();
+}
+window.setLang = (l) => {
+  if (l !== "zh" && l !== "en") return;
+  LANG_PICKED = l;
+  try { localStorage.setItem("mjs_lang", l); } catch {}
+  relang(l);
+};
+
+const RARITY_COLOR = { "1": "var(--r1)", "2": "var(--r2)", "3": "var(--r3)", "4": "var(--r4)" };
 const SETCOL = { Tarot: "var(--tarot)", Planet: "var(--planet)", Spectral: "var(--spectral)",
                  Base: "var(--card)", Enhanced: "var(--card)", Default: "var(--card)" };
-const SETNAME = { Joker: "小丑", Tarot: "塔罗牌", Planet: "星球牌", Spectral: "幻灵牌",
-                  Base: "扑克牌", Enhanced: "附魔牌", Default: "扑克牌" };
 const EDITION = {
-  e_foil: { cls: "ed-foil", name: "闪箔" }, e_holo: { cls: "ed-holo", name: "全息" },
-  e_polychrome: { cls: "ed-poly", name: "多彩" }, e_negative: { cls: "ed-neg", name: "负片" },
+  e_foil: { cls: "ed-foil" }, e_holo: { cls: "ed-holo" },
+  e_polychrome: { cls: "ed-poly" }, e_negative: { cls: "ed-neg" },
 };
 
 let LOC = {}, SPRITES = {};
-const nameOf = (key) => LOC[key] || key || "?";
+// 卡牌名字：catalog.dat 的中英文官方名 → 内置官方名 → 旧版目录里的游戏语言名（仅中文模式）→ 快照里的英文名
+function nameOf(key, fallback) {
+  const n = CAT_NAMES?.[LANG]?.[key] || NAMES_BUILTIN[LANG][key];
+  if (n) return n;
+  if (LANG === "zh") { const z = catName(key); if (z) return z; }
+  return LOC[key] || fallback || key || "?";
+}
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
 // 图集图片：从 Balatro.exe 提取的原版 2x 图集（web/atlas/*.png）。
@@ -325,24 +599,23 @@ function cardHtml(c, negK) {
 
   let title, rarHtml = "";
   if (isJoker) {
-    title = c.key ? (c.name || nameOf(c.key)) : "（空池兜底）";
-    const r = c.rarity != null ? RARITY[String(c.rarity)] : null;
-    if (r) rarHtml = `<div class="rar" style="color:${r.color}">${r.name}</div>`;
+    title = c.key ? nameOf(c.key, c.name) : t("card.emptyPool");
+    const col = c.rarity != null ? RARITY_COLOR[String(c.rarity)] : null;
+    if (col) rarHtml = `<div class="rar" style="color:${col}">${esc(rarityName(c.rarity))}</div>`;
   } else if (isPhysical) {
     // 实体牌牌面本版不预测（预测的没 key；当前商店牌面未 dump），显示类型名
-    title = SETNAME[set] || "扑克牌";
+    title = setName(set);
   } else {
-    title = c.name || nameOf(c.key);
+    title = nameOf(c.key, c.name);
   }
 
   const barColor = isJoker
-    ? (c.rarity != null ? RARITY[String(c.rarity)]?.color : "var(--muted)")
+    ? (c.rarity != null ? RARITY_COLOR[String(c.rarity)] || "var(--muted)" : "var(--muted)")
     : (SETCOL[set] || "var(--muted)");
 
   let edHtml = "";
   if (c.edition && EDITION[c.edition]) {
-    const e = EDITION[c.edition];
-    edHtml = `<span class="ed ${e.cls}">${e.name}</span>`;
+    edHtml = `<span class="ed ${EDITION[c.edition].cls}">${esc(edName(c.edition))}</span>`;
   }
 
   // 卡图：当前商店卡带 c.sprite；预测卡用 key 查 SPRITES。实体牌无牌面 → 不出图。
@@ -352,15 +625,15 @@ function cardHtml(c, negK) {
     // 回退：类型/稀有度色块占位
     const w = CELL_W * DISP, h = CELL_H * DISP;
     visual = `<div class="sprite-fallback" style="width:${w}px;height:${h}px;background:${barColor}">`
-      + `${isPhysical ? (SETNAME[set] || "牌") : ""}</div>`;
+      + `${isPhysical ? esc(setName(set) || t("card.fallback")) : ""}</div>`;
   }
 
   const isNeg = c.edition === "e_negative";
   let cls = (isPhysical && !c.key) ? "card placeholder" : "card";
   if (isNeg) cls += " negative";
   else if (negK) cls += " negtag";
-  const badge = isNeg ? `<div class="negbadge">★ 负片</div>`
-    : negK ? `<div class="negtag-badge" title="第 ${negK} 个负片标签会用在这张：变成负片，并且免费">负片标签 #${negK}</div>`
+  const badge = isNeg ? `<div class="negbadge">${t("badge.neg")}</div>`
+    : negK ? `<div class="negtag-badge" title="${esc(t("badge.negtagTitle", negK))}">${esc(t("badge.negtag", negK))}</div>`
     : "";
   // data-key 供「高亮关注」用：关注列表变化时只改一段动态 CSS，不用重画上千张卡
   return `<div class="${cls}" data-key="${esc(c.key || "")}">
@@ -371,7 +644,7 @@ function cardHtml(c, negK) {
       ${visual}
       <div class="name">${esc(title)}</div>
       ${edHtml}
-      <div class="type">${SETNAME[set] || set || "?"}</div>
+      <div class="type">${esc(setName(set))}</div>
     </div>
   </div>`;
 }
@@ -380,6 +653,7 @@ function cardHtml(c, negK) {
 let lastState = null;
 let lastQueuePred;   // 队列区上次渲染用的预测对象（身份不变 → 不重画队列）
 let lastCovSig = ""; // 队列区上次渲染时的负片覆盖参数（开关 + 标签数）
+let lastTagsHtml = null; // 跳过标签预测区上次渲染的 HTML（没变就不重画）
 let predSerial = 0;  // 队列每重画一次 +1（关注条据此判断「出现次数」要不要重算）
 
 function render(s) { lastState = s; draw(); }
@@ -392,14 +666,14 @@ function tagsHtml(s) {
   const tags = s.owned?.tags || [];
   let body;
   if (schema < 2) {
-    body = `<span class="tags-empty">需要重启游戏后才有标签数据</span>`;
+    body = `<span class="tags-empty">${t("tags.restart")}</span>`;
   } else if (!tags.length) {
-    body = `<span class="tags-empty">当前没有标签</span>`;
+    body = `<span class="tags-empty">${t("tags.none")}</span>`;
   } else {
-    body = tags.map(t => `<span class="tag-chip">${esc(t.name || t.key)} <b>×${t.count}</b></span>`).join("");
+    body = tags.map(g => `<span class="tag-chip">${esc(tagName(g.key, g.name))} <b>×${g.count}</b></span>`).join("");
   }
-  const total = tags.reduce((a, t) => a + (t.count || 0), 0);
-  const title = tags.length ? `当前标签 · ${tags.length} 种 ${total} 个` : "当前标签";
+  const total = tags.reduce((a, g) => a + (g.count || 0), 0);
+  const title = tags.length ? t("tags.titleN", tags.length, total) : t("tags.title");
   return `<div class="sec-title2"><span>${title}</span><span class="line"></span></div>
     <div class="tags-row">${body}</div>`;
 }
@@ -411,9 +685,9 @@ function tagsHtml(s) {
 const AURA_SHOW = 5;     // 只展示接下来 5 张
 const AURA_SCAN = 100;   // 但往后找多彩找到 100 张（每张 15%，100 张内没有的概率 ~1e-7）
 function auraEdition(d) {
-  if (d > 0.85) return { cls: "ed-poly", name: "多彩", poly: true };
-  if (d > 0.5)  return { cls: "ed-holo", name: "全息", poly: false };
-  return { cls: "ed-foil", name: "闪箔", poly: false };
+  if (d > 0.85) return { cls: "ed-poly", key: "e_polychrome", poly: true };
+  if (d > 0.5)  return { cls: "ed-holo", key: "e_holo", poly: false };
+  return { cls: "ed-foil", key: "e_foil", poly: false };
 }
 // 返回 {list:[{n,d,ed}]（前 AURA_SHOW 张）, nextPoly} —— 拿不到 RNG 数据时返回 null。
 // 每次重画都会调用，所以按「aura 流 + 种子」缓存：只有用了光环才会变。
@@ -449,20 +723,254 @@ function auraHtml(s) {
   const p = auraPredict(s);
   if (!p) return "";
   const head = p.nextPoly === null
-    ? `<span class="aura-note">${AURA_SCAN} 张内没有多彩</span>`
+    ? `<span class="aura-note">${t("aura.none", AURA_SCAN)}</span>`
     : (p.nextPoly === 1
-        ? `<span class="aura-next">下一张就是多彩 ★</span>`
-        : `<span class="aura-next">还差 ${p.nextPoly - 1} 张到多彩</span>`);
+        ? `<span class="aura-next">${t("aura.nextIs")}</span>`
+        : `<span class="aura-next">${t("aura.until", p.nextPoly - 1)}</span>`);
   const cells = p.list.map(x =>
     `<div class="aura-cell${x.ed.poly ? " poly" : ""}" title="d=${x.d.toFixed(6)}">
-       <div class="n">${x.ed.poly ? "★ " : ""}第 ${x.n} 张</div>
-       <div class="e ${x.ed.cls}">${x.ed.name}</div>
+       <div class="n">${x.ed.poly ? "★ " : ""}${t("aura.nth", x.n)}</div>
+       <div class="e ${x.ed.cls}">${esc(edName(x.ed.key))}</div>
      </div>`).join("");
   return `<div class="sec-title2">
-      <span>光环预测</span><span class="line"></span>${head}
+      <span>${t("aura.title")}</span><span class="line"></span>${head}
     </div>
     <div class="aura-strip">${cells}</div>
-    ${p.fresh ? '<div class="aura-note">本局还没用过光环，以上是从第一张算起</div>' : ""}`;
+    ${p.fresh ? `<div class="aura-note">${t("aura.fresh")}</div>` : ""}`;
+}
+
+// ================= 跳过标签预测 =================
+// 每个底注开始时抽两次标签：先小盲、再大盲。开局在 game.lua:2241；之后每次打完 Boss、兑现时在
+// button_callbacks.lua:3013 抽，那时底注已经 +1。抽法见 get_next_tag_key（common_events.lua:2241）：
+//   池 = 标签按顺序排，不可用的用 UNAVAILABLE 占位（长度不变）；key = "Tag" + 底注；
+//   i = floor(d*N)+1，抽到 UNAVAILABLE 就换 key.."_resample"..it（it 从 2 起）接着抽。
+// 流按 key 独立，第一次用时由 pseudohash(key..seed) 初始化，所以每个底注的标签只取决于种子。
+// 已用存档核对：种子 9BZ266W2 第 1 底注是 D6 / Boss，Tag1 和 _resample2~5 五条流的状态逐位一致。
+
+// 原版 24 个标签（game.lua:230-253，按 order 排）：[key, 中文名, 英文名, 最低底注]。
+// 旧版 dump 没有 tag_pool 时用它，并假设 requires（蓝图、四种版本）都已发现。名字也兼作官方名兜底。
+const TAG_VANILLA = [
+  ["tag_uncommon", "罕见标签", "Uncommon Tag"], ["tag_rare", "稀有标签", "Rare Tag"], ["tag_negative", "负片标签", "Negative Tag", 2],
+  ["tag_foil", "闪箔标签", "Foil Tag"], ["tag_holo", "镭射标签", "Holographic Tag"], ["tag_polychrome", "多彩标签", "Polychrome Tag"],
+  ["tag_investment", "投资标签", "Investment Tag"], ["tag_voucher", "优惠券标签", "Voucher Tag"], ["tag_boss", "Boss标签", "Boss Tag"],
+  ["tag_standard", "标准标签", "Standard Tag", 2], ["tag_charm", "吊饰标签", "Charm Tag"], ["tag_meteor", "流星标签", "Meteor Tag", 2],
+  ["tag_buffoon", "小丑标签", "Buffoon Tag", 2], ["tag_handy", "顺手标签", "Handy Tag", 2], ["tag_garbage", "垃圾标签", "Garbage Tag", 2],
+  ["tag_ethereal", "空灵标签", "Ethereal Tag", 2], ["tag_coupon", "代金券标签", "Coupon Tag"], ["tag_double", "双倍标签", "Double Tag"],
+  ["tag_juggle", "杂耍标签", "Juggle Tag"], ["tag_d_six", "D6标签", "D6 Tag"], ["tag_top_up", "充值标签", "Top-up Tag", 2],
+  ["tag_skip", "速度标签", "Speed Tag"], ["tag_orbital", "轨道标签", "Orbital Tag", 2], ["tag_economy", "经济标签", "Economy Tag"],
+];
+const TAG_POOL_VANILLA = TAG_VANILLA.map(([k, zh, en, m]) => ({ k, n: zh, m, ok: true }));
+const TAG_NAMES = { zh: Object.fromEntries(TAG_VANILLA.map(x => [x[0], x[1]])),
+                    en: Object.fromEntries(TAG_VANILLA.map(x => [x[0], x[2]])) };
+const tagName = (key, fallback) => CAT_NAMES?.[LANG]?.[key] || TAG_NAMES[LANG][key] || fallback || key;
+
+// 只算到第 39 底注：那一关的目标分已经溢出成 nan，正常玩不到更后面
+const TAG_MAX_ANTE = 39;
+let tagGridOpen = (() => { try { return localStorage.getItem("mjs_tag_grid") === "1"; } catch { return false; } })();
+window.toggleTagGrid = () => { tagGridOpen = !tagGridOpen; try { localStorage.setItem("mjs_tag_grid", tagGridOpen ? "1" : "0"); } catch {} draw(); };
+
+const tagPoolOf = (s) => (Array.isArray(s.tag_pool) && s.tag_pool.length) ? s.tag_pool : null;
+
+// 返回 { rows: [{ante, small, big}], exact }，small/big 是池里的标签对象 {k, n, m, ok}
+let tagCache = { key: null, value: null };
+function skipTagPredict(s, maxAnte) {
+  const R = window.LuaJITRNG;
+  const seed = s.run?.seed, hs = parseFloat(s.run?.hashed_seed);
+  if (!R || !seed || seed === "?" || !isFinite(hs)) return null;
+  const pool = tagPoolOf(s) || TAG_POOL_VANILLA;
+  const cur = s.run?.ante ?? 1;
+  const streams = s.rng?.streams || {};
+  // 以后的底注如果已经来过（象形文字 / 岩画让底注倒退），它的流要接着上次的状态抽
+  const revisit = Object.keys(streams).filter(k => { const m = /^Tag(\d+)/.exec(k); return m && +m[1] > cur; })
+    .sort().map(k => k + "=" + streams[k]).join(",");
+  const key = [seed, hs, cur, maxAnte, JSON.stringify(pool.map(t => [t.k, t.m, t.ok])), revisit].join("|");
+  if (tagCache.key === key) return tagCache.value;
+
+  const st = Object.create(null);
+  const drawTag = (k, ante) => {
+    let v = st[k];
+    if (v === undefined) v = (ante > cur && streams[k] != null) ? parseFloat(streams[k]) : R.pseudohash(k + seed);
+    v = R.advance(v);
+    st[k] = v;
+    return R.firstRandom((v + hs) / 2);
+  };
+  const rows = [];
+  for (let a = 1; a <= maxAnte; a++) {
+    const list = pool.map(t => (t.ok && (!t.m || t.m <= a)) ? t : null);   // null = UNAVAILABLE
+    const pick = () => {
+      const k = "Tag" + a;
+      let got = list[Math.floor(drawTag(k, a) * list.length)], it = 1;
+      while (!got && it < 500) { it++; got = list[Math.floor(drawTag(k + "_resample" + it, a) * list.length)]; }
+      return got;
+    };
+    const small = pick(), big = pick();   // 顺序不能换：先小盲后大盲，共用同一条流
+    rows.push({ ante: a, small, big });
+  }
+  const value = { rows, exact: !!tagPoolOf(s) };
+  tagCache = { key, value };
+  return value;
+}
+
+function tagsPredictHtml(s) {
+  const p = skipTagPredict(s, TAG_MAX_ANTE);
+  if (!p) return "";
+  const cur = s.run?.ante ?? 1;
+  const byKey = new Map((tagPoolOf(s) || TAG_POOL_VANILLA).map(t => [t.k, t]));
+  const actual = s.run?.blind_tags, states = s.run?.blind_states || {};
+  const tagOf = (k) => byKey.get(k) || { k, n: k };
+  // 本底注以 mod 导出的实际标签为准（底注倒退过的话，本底注的标签不是从头抽的那两个）
+  const rows = p.rows.map(r => (r.ante === cur && actual?.Small)
+    ? { ...r, small: tagOf(actual.Small), big: actual.Big ? tagOf(actual.Big) : r.big, real: true } : r);
+  // 已经跳过 / 打过的盲注，标签已经拿到或错过了
+  const done = (which) => /^(Skipped|Defeated)$/.test(states[which] || "");
+
+  const upcoming = [];
+  for (const r of rows) {
+    if (r.ante < cur) continue;
+    for (const [which, blind] of [["Small", t("ta.small")], ["Big", t("ta.big")]]) {
+      const tg = which === "Small" ? r.small : r.big;
+      if (tg?.k !== "tag_negative") continue;
+      if (r.ante === cur && done(which)) continue;
+      upcoming.push(`<span class="ta-neg${r.ante === cur ? " now" : ""}">${esc(t("ta.chip", r.ante, blind, r.ante === cur))}</span>`);
+    }
+  }
+  const sum = upcoming.length
+    ? `<span>${t("ta.upcoming")}</span>${upcoming.join("")}`
+    : `<span style="color:var(--muted)">${t("ta.none", TAG_MAX_ANTE)}</span>`;
+
+  let grid = "";
+  if (tagGridOpen) {
+    const line = (label, tg, state) => {
+      const cls = tg?.k === "tag_negative" ? " neg" : tg?.k === "tag_double" ? " dbl" : "";
+      const st = state === "Skipped" ? `<small>${t("ta.skipped")}</small>` : state === "Defeated" ? `<small>${t("ta.defeated")}</small>` : "";
+      return `<div class="ta-t${cls}"><i>${label}</i><b>${esc(tg ? tagName(tg.k, tg.n) : "?")}</b>${st}</div>`;
+    };
+    grid = `<div class="ta-grid">` + rows.map(r => {
+      const now = r.ante === cur;
+      return `<div class="ta-cell${now ? " cur" : r.ante < cur ? " past" : ""}">
+          <div class="ta-h"><span>${t("ta.ante", r.ante)}</span>${now ? `<span>${t("ta.current")}</span>` : ""}</div>
+          ${line(t("ta.s"), r.small, now ? states.Small : null)}
+          ${line(t("ta.b"), r.big, now ? states.Big : null)}
+        </div>`;
+    }).join("") + `</div>`;
+  }
+
+  const notes = [t("ta.note", TAG_MAX_ANTE)];
+  if (!p.exact) notes.push(t("ta.noteEst"));
+  return `<div class="sec-title2">
+      <span>${t("ta.title")}</span><span class="line"></span>
+      <button class="ta-toggle" onclick="toggleTagGrid()">${tagGridOpen ? t("ta.collapse") : t("ta.expand")}</button>
+    </div>
+    <div class="ta-sum">${sum}</div>
+    ${grid}
+    <div class="ta-note">${notes.join(t("sep"))}</div>`;
+}
+
+// ================= 补充包预测 =================
+// 计算在 tools/predict.js 的 predictPacks（已对照 balatrohq：种子 9BZ266W2 第 1-12 底注 70 个包、242 张牌全部一致）。
+// 这里只管显示：每个包按「下一个就开它」算；包打开后，拿开包前的预测和实际开出来的牌逐张核对。
+const SUIT_SYM = { Hearts: "♥", Diamonds: "♦", Clubs: "♣", Spades: "♠" };
+const RANK_SHORT = { Jack: "J", Queen: "Q", King: "K", Ace: "A" };
+const isPlaying = (c) => !!c.front || c.set === "Base" || c.set === "Enhanced" || c.set === "Default";
+
+// 扑克牌卡片：预测的带 front {r, s}，实际开出来的带 rank / suit。
+// names：mod 导出的附魔 / 蜡封名（游戏当前语言），只在 catalog 和内置表都没有时才用
+function playingCardHtml(c, names) {
+  const rank = c.front ? c.front.r : c.rank, suit = c.front ? c.front.s : c.suit;
+  const red = suit === "Hearts" || suit === "Diamonds";
+  const enh = c.key && c.key !== "c_base" ? locName(c.key, names[c.key]) : t("pc.plain");
+  const e = c.edition && EDITION[c.edition];
+  return `<div class="card">
+    <div class="bar" style="background:var(--card)"></div>
+    <div class="body">
+      <div class="pc-face ${red ? "red" : "black"}">${esc((RANK_SHORT[rank] || rank || "?") + (SUIT_SYM[suit] || ""))}</div>
+      <div class="name">${esc(enh)}</div>
+      ${e ? `<span class="ed ${e.cls}">${esc(edName(c.edition))}</span>` : ""}
+      ${c.seal ? `<span class="seal seal-${esc(c.seal)}">${esc(locName(c.seal, names[c.seal] || t("pc.seal", c.seal)))}</span>` : ""}
+      <div class="type">${esc(setName("Base"))}</div>
+    </div>
+  </div>`;
+}
+const packCardHtml = (c, names) => isPlaying(c) ? playingCardHtml(c, names) : cardHtml(c);
+
+// 开包前每个包最后一次的预测（按包的 key 记），包打开后拿来核对
+const packMemo = new Map();
+const packSig = (c) => [c.key || "", c.edition || "",
+  c.front ? c.front.r : (c.rank || ""), c.front ? c.front.s : (c.suit || ""), c.seal || ""].join("|");
+// 核对：开包后可以一张张选走（最多 choose 张），选走的牌就从包里消失了（塔罗 / 幻灵直接用掉），
+// 所以不能要求张数相同。规则：实际还在包里的每一张都要在预测里找到对应的一张（按多重集合，不管顺序），
+// 预测里多出来的就是已经选走的，数量不能超过可选数。
+function packMatch(pred, actual, choose) {
+  const left = pred.map(c => ({ c, sig: packSig(c), used: false }));
+  for (const a of actual) {
+    const hit = left.find(x => !x.used && x.sig === packSig(a));
+    if (!hit) return { ok: false, taken: [] };
+    hit.used = true;
+  }
+  const taken = left.filter(x => !x.used).map(x => x.c);
+  return { ok: taken.length <= (choose || pred.length), taken };
+}
+const packCardName = (c) => isPlaying(c)
+  ? (RANK_SHORT[c.front ? c.front.r : c.rank] || (c.front ? c.front.r : c.rank) || "?") + (SUIT_SYM[c.front ? c.front.s : c.suit] || "")
+  : nameOf(c.key);
+
+// 包名：catalog 的官方名（按包的 key）→ 内置官方名（去掉结尾的 _1 等编号）→ mod 导出的游戏语言名
+function packTitle(p) {
+  const key = p.key || "";
+  return esc(CAT_NAMES?.[LANG]?.[key] || NAMES_BUILTIN[LANG][key.replace(/_\d+$/, "")] || p.name || key || t("packs.generic"));
+}
+
+function packsHtml(s) {
+  const P = s.packs || {};
+  const names = P.std?.names || {};
+  const open = Array.isArray(P.open) && P.open.length ? P.open : null;
+
+  // 正在开包：只显示核对结果。其余包等这个包关掉后再算（开着的包里的牌暂时也算「已用」）
+  if (open) {
+    const before = P.opened ? packMemo.get(P.opened) : null;
+    let verdict, extra = "";
+    if (before?.cards?.length) {
+      const m = packMatch(before.cards, open, before.choose);
+      const taken = m.taken.length ? " " + t("packs.taken", m.taken.length, m.taken.map(packCardName).join(LANG === "zh" ? "、" : ", ")) : "";
+      verdict = m.ok ? `<span class="pack-verify ok">${t("packs.ok")}${esc(taken)}</span>`
+                     : `<span class="pack-verify bad">${t("packs.bad")}</span>`;
+      if (!m.ok) extra = `<div class="pack-h" style="margin-top:8px"><small>${t("packs.before")}</small></div>
+        <div class="cards">${before.cards.map(c => packCardHtml(c, names)).join("")}</div>`;
+    } else {
+      verdict = `<span class="pack-note muted">${t("packs.noMemo")}</span>`;
+    }
+    const title = before ? packTitle(before) : packTitle({ key: P.opened });
+    return `<div class="sec-title">${t("packs.titleOpen")}</div><div class="packs"><div class="pack">
+        <div class="pack-h"><b>${t("packs.opening", title)}</b>${verdict}</div>
+        <div class="cards">${open.map(c => packCardHtml(c, names)).join("")}</div>${extra}
+      </div></div>`;
+  }
+
+  const preds = window.MJSPredict?.predictPacks ? MJSPredict.predictPacks(s) : null;
+  if (!preds || !preds.length) return "";
+  for (const p of preds) packMemo.set(p.key, p);
+
+  const blocks = preds.map(p => {
+    const notes = [];
+    if (p.sameKind) notes.push(t("packs.same", p.sameKind.join(LANG === "zh" ? "、" : ", ")));
+    if (p.telescopeUnknown) notes.push(t("packs.telescope"));
+    for (const c of p.cards) if (c.key === "c_soul" && c.legendary) {
+      const e = c.legendary.edition && EDITION[c.legendary.edition];
+      const ed = e ? (LANG === "zh" ? "（" + edName(c.legendary.edition) + "）" : " (" + edName(c.legendary.edition) + ")") : "";
+      notes.push(esc(t("packs.soul", nameOf(c.legendary.key) + ed)));
+    }
+    const meta = [p.size ? t("packs.meta", p.size, p.choose || 1) : "", p.cost != null ? `$${p.cost}` : ""].filter(Boolean).join(" · ");
+    // predict.js 返回的是代码（unknown / std_restart / unsupported），在这里翻译
+    const unknown = p.unknown ? (p.unknown === "unsupported" ? t("packs.unsupported", p.kind) : t("packs." + p.unknown)) : "";
+    return `<div class="pack">
+        <div class="pack-h"><b>${packTitle(p)}</b><small>${meta}</small>${notes.map(n => `<span class="pack-note">${n}</span>`).join("")}</div>
+        ${unknown ? `<div class="pack-note muted">${esc(unknown)}</div>`
+                  : `<div class="cards">${p.cards.map(c => packCardHtml(c, names)).join("")}</div>`}
+      </div>`;
+  }).join("");
+  return `<div class="sec-title">${t("packs.title")}</div>
+    <div class="packs">${blocks}</div>
+    <div class="ta-note">${t("packs.note")}</div>`;
 }
 
 // ================= 负片标签覆盖 =================
@@ -488,11 +996,15 @@ function negTagPlan(s) {
   const have = tagCount(s, "tag_negative"), dbl = tagCount(s, "tag_double");
   const other = tagCount(s, "tag_foil") + tagCount(s, "tag_holo") + tagCount(s, "tag_polychrome");
   const skip = dbl > 0 || have === 0;
+  return { n: have + (skip ? 1 + dbl : 0), other, have, dbl, skip };
+}
+// 「负片标签 N 个（…）」括号里的算式，按当前语言拼
+function negFormula(plan) {
   const parts = [];
-  if (have) parts.push(`已有 ${have} 个`);
-  if (skip) parts.push("跳过拿 1 个");
-  if (skip && dbl) parts.push(`${dbl} 个双倍标签各复制 1 个`);
-  return { n: have + (skip ? 1 + dbl : 0), other, formula: parts.join(" + ") };
+  if (plan.have) parts.push(t("neg.have", plan.have));
+  if (plan.skip) parts.push(t("neg.skip"));
+  if (plan.skip && plan.dbl) parts.push(t("neg.dbl", plan.dbl));
+  return parts.join(t("neg.plus"));
 }
 
 // 按生成顺序（R+1 第 1 格起）数「没有版本的小丑」：前 other 张先被闪箔/全息/多彩标签占用
@@ -517,37 +1029,37 @@ function negCoverage(pred, plan) {
 }
 
 function negCovInfoHtml(pred, plan, cov) {
-  if (!plan) return `<div class="negcov-info"><small>需要重启游戏后才有标签数据</small></div>`;
-  const head = `负片标签 <b>${plan.n}</b> 个（${plan.formula}）`;
+  if (!plan) return `<div class="negcov-info"><small>${t("tags.restart")}</small></div>`;
+  const head = t("neg.head", plan.n, esc(negFormula(plan)));
   const res = !cov.map.size
-    ? `：展示的 ${pred.rerolls.length} 次 reroll 里用不上（没有轮到负片的普通版本小丑）`
+    ? t("neg.useless", pred.rerolls.length)
     : cov.leftover > 0
-    ? `：展示的 ${pred.rerolls.length} 次 reroll 里 <b>${cov.map.size}</b> 张普通版本小丑全部覆盖，还剩 <b>${cov.leftover}</b> 个`
-    : `：覆盖到 <b>R+${cov.last.r} 第 ${cov.last.slot} 格</b>`;
-  const notes = ["自带版本的小丑不吃标签，直接跳过", "从 R+1 算起"];
-  if (plan.other) notes.push(`你还有 ${plan.other} 个闪箔/全息/多彩标签，它们排在前面，会先用掉前 ${plan.other} 张（已扣除）`);
-  if (cov.unknown) notes.push("快照缺版本数据，没法排除自带版本的小丑，结果可能偏前");
-  notes.push("跳过大盲的话，下一个商店在打完 Boss 之后，底注 +1 换了一条队列（打完 Boss 页面会自动更新）");
-  return `<div class="negcov-info">${head}${res}<small>${notes.join("；")}</small></div>`;
+    ? t("neg.all", pred.rerolls.length, cov.map.size, cov.leftover)
+    : t("neg.until", cov.last.r, cov.last.slot);
+  const notes = [t("neg.n1"), t("neg.n2")];
+  if (plan.other) notes.push(t("neg.other", plan.other));
+  if (cov.unknown) notes.push(t("neg.unknown"));
+  notes.push(t("neg.big"));
+  return `<div class="negcov-info">${head}${res}<small>${notes.join(t("sep"))}</small></div>`;
 }
 
 // 预测队列 HTML：选定深度的全部 reroll 一次铺开（不分页）
 function queueHtml(pred) {
   if (!pred?.rerolls?.length) {
-    return `<div class="sec-title">预测队列</div><div class="banner">暂无预测（需在局内，且快照里有卡池数据）</div>`;
+    return `<div class="sec-title">${t("q.title")}</div><div class="banner">${t("q.none")}</div>`;
   }
   const total = pred.rerolls.length;
   // 深度：预设 + 自定义。当前深度不是预设值时，下拉框显示「自定义」并亮出输入框
   const isPreset = DEPTH_PRESETS.includes(predDepth);
   const depthSel = DEPTH_PRESETS.map(n =>
     `<option value="${n}"${n === predDepth ? " selected" : ""}>${n}</option>`).join("")
-    + `<option value="custom"${isPreset ? "" : " selected"}>自定义</option>`;
+    + `<option value="custom"${isPreset ? "" : " selected"}>${t("q.custom")}</option>`;
   const depthCtl = pred.local
-    ? `<span class="depth-ctl">深度 <select onchange="onDepthSelect(this.value)">${depthSel}</select>
+    ? `<span class="depth-ctl">${t("q.depth")} <select onchange="onDepthSelect(this.value)">${depthSel}</select>
        <input id="depth-input" class="depth-input" type="number" min="1" max="${DEPTH_MAX}" step="1"
               value="${predDepth}" title="1 ~ ${DEPTH_MAX}"${isPreset ? " hidden" : ""}
               onchange="if (this.value.trim() === '') this.value = ${predDepth}; else setDepth(this.value)"
-              onkeydown="if (event.key === 'Enter') this.blur()"> 次</span>`
+              onkeydown="if (event.key === 'Enter') this.blur()"> ${t("q.times")}</span>`
     : "";
   // 网格按「一个 reroll 块」的宽度排布，一行放几个由屏幕宽度自动决定。
   // 块宽取决于商店槽位数，由 CSS 用 --slots 算出（见 .queue）。
@@ -555,9 +1067,9 @@ function queueHtml(pred) {
   const plan = negOn ? negTagPlan(lastState) : null;
   const cov = plan ? negCoverage(pred, plan) : null;
   const negBtn = `<button class="negcov-btn${negOn ? " on" : ""}" onclick="toggleNegCov()"
-      title="按手上的负片标签（含双倍标签的复制），标出后面哪些商店小丑会变成负片">负片覆盖${negOn ? " ✓" : ""}</button>`;
+      title="${esc(t("neg.btnTitle"))}">${t("neg.btn")}${negOn ? " ✓" : ""}</button>`;
   let h = `<div class="sec-title2">
-      <span>预测队列 · 共 ${total} 次${pred.local ? "" : "（mod 端）"}</span>
+      <span>${t("q.titleN", total, !pred.local)}</span>
       <span class="line"></span>
       <div class="pager">${negBtn}${depthCtl}</div>
     </div>
@@ -577,6 +1089,15 @@ function queueHtml(pred) {
 // 已选的用缩略图 + 「最早 R+N · 共几次」显示，点一下跳到它最早出现的位置（商店或队列）。
 // 高亮靠一段按 data-key 选中的动态 CSS —— 改关注列表不用重画上千张卡。
 let CATALOG = null;   // catalog.dat：全部小丑（含游戏内中文名），mod 每会话写一次
+let CONS = null;      // catalog.dat 里的塔罗 / 星球 / 幻灵牌（新版 mod 才有），只用来取名字
+let catNames = null;  // key → 游戏内本地化名（小丑 + 消耗牌），第一次用时建
+function catName(key) {
+  if (!catNames && (CATALOG || CONS)) {
+    catNames = new Map();
+    for (const c of [...(CATALOG || []), ...(CONS || [])]) if (c.lname) catNames.set(c.key, c.lname);
+  }
+  return catNames ? catNames.get(key) : undefined;
+}
 let watched = (() => { try { const v = JSON.parse(localStorage.getItem("mjs_watch") || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } })();
 const saveWatched = () => { try { localStorage.setItem("mjs_watch", JSON.stringify(watched)); } catch {} };
 
@@ -585,7 +1106,21 @@ async function loadCatalog() {
     const r = await fetch("/catalog.dat?t=" + Date.now(), { cache: "no-store" });
     if (r.ok) {
       const c = await r.json();
-      if (Array.isArray(c.jokers) && c.jokers.length) { CATALOG = c.jokers; watchChipsSig = null; refreshWatch(); return; }
+      if (Array.isArray(c.jokers) && c.jokers.length) {
+        CATALOG = c.jokers;
+        CONS = Array.isArray(c.consumables) ? c.consumables : null;
+        CAT_NAMES = c.names && c.names.en && c.names.zh ? c.names : null;
+        // 小丑的中英文名直接挂在条目上，搜索时两种都能匹配
+        for (const j of CATALOG) { j.en = CAT_NAMES?.en?.[j.key]; j.zh = CAT_NAMES?.zh?.[j.key]; }
+        catNames = null;
+        watchChipsSig = null;
+        // 没手动选过语言：跟随游戏语言
+        const gameLang = String(c.lang || "").toLowerCase().startsWith("zh") ? "zh" : (c.lang ? "en" : null);
+        if (!LANG_PICKED && gameLang && gameLang !== LANG) { relang(gameLang); return; }
+        lastQueuePred = undefined;   // 名字换成官方名了，队列要重画一次
+        draw();
+        return;
+      }
     }
   } catch {}
   setTimeout(loadCatalog, 5000);   // 旧版 mod 没写过 / 还没进局 → 过一会儿再试
@@ -603,8 +1138,9 @@ function catalogList() {
   return out;
 }
 const catalogMap = () => new Map(catalogList().map(c => [c.key, c]));
-const displayName = (c) => c.lname || c.name || c.key;
-const rarityName = (r) => RARITY[String(r)]?.name || String(r ?? "");
+// 当前语言的名字；搜索下拉的副标题显示另一种语言的名字
+const displayName = (c) => (LANG === "zh" ? (c.zh || c.lname) : c.en) || c.name || c.key;
+const otherName = (c) => (LANG === "zh" ? (c.en || (c.lname ? c.name : "")) : (c.zh || c.lname)) || "";
 
 function applyWatchStyle() {
   let el = document.getElementById("watch-style");
@@ -623,7 +1159,7 @@ function applyWatchStyle() {
     `${sel(":not(.negative)")}{animation:watchglow 2.4s linear infinite}` +
     // 跳转时的闪动和发光同时进行（否则上面那条优先级更高，会把闪动盖掉）
     `${sel(":not(.negative).flash")}{animation:watchflash .55s ease 2,watchglow 2.4s linear infinite}` +
-    `${sel("::after")}{content:"★ 关注";position:absolute;right:0;bottom:0;z-index:5;` +
+    `${sel("::after")}{content:"${t("watch.badge")}";position:absolute;right:0;bottom:0;z-index:5;` +
       `background:linear-gradient(90deg,${RAINBOW});background-size:300% 100%;animation:watchbadge 2.4s linear infinite;` +
       `color:#1a1020;font-size:11px;font-weight:800;padding:3px 9px;border-top-left-radius:9px}`;
 }
@@ -644,7 +1180,7 @@ function occurrences(pred) {
 }
 
 function watchChipsHtml() {
-  if (!watched.length) return `<span class="watch-empty">还没有关注的小丑 —— 在搜索框里输入名字，点击结果即可添加（可多选）</span>`;
+  if (!watched.length) return `<span class="watch-empty">${t("w.empty")}</span>`;
   const cat = catalogMap(), occ = occurrences(lastQueuePred);
   const inShop = new Set((lastState?.shop?.jokers || []).map(c => c.key));
   const inPool = new Set();
@@ -656,15 +1192,15 @@ function watchChipsHtml() {
     // 传奇不在商店的稀有度表里（poll_config.joker_rarities 只有普通/罕见/稀有），只能靠灵魂牌开出
     const legendary = String(c.rarity) === "4" || c.rarity === "Legendary";
     let info;
-    if (inShop.has(k))                            info = `<small class="now">当前商店里就有！</small>`;
-    else if (o)                                   info = `<small class="hit">最早 R+${o.first} · 共 ${o.count} 次</small>`;
-    else if (legendary)                           info = `<small title="传奇小丑不在商店的稀有度表里，只能从灵魂牌（The Soul）开出">传奇 · 商店不会出现</small>`;
-    else if (lastState?.pools && !inPool.has(k))  info = `<small>不在当前卡池（已拥有、未解锁等）</small>`;
-    else                                          info = `<small>${depth} 次内未出现</small>`;
-    return `<div class="watch-chip" data-key="${esc(k)}" title="点击跳到它最早出现的位置（商店或队列）">
+    if (inShop.has(k))                            info = `<small class="now">${t("w.inShop")}</small>`;
+    else if (o)                                   info = `<small class="hit">${t("w.first", o.first, o.count)}</small>`;
+    else if (legendary)                           info = `<small title="${esc(t("w.legendTitle"))}">${t("w.legend")}</small>`;
+    else if (lastState?.pools && !inPool.has(k))  info = `<small>${t("w.notInPool")}</small>`;
+    else                                          info = `<small>${t("w.notWithin", depth)}</small>`;
+    return `<div class="watch-chip" data-key="${esc(k)}" title="${esc(t("w.chipTitle"))}">
         ${spriteHtml(c.sprite, 0.5) || ""}
         <div><b>${esc(displayName(c))}</b>${info}</div>
-        <button class="x" data-remove="${esc(k)}" title="取消关注">×</button>
+        <button class="x" data-remove="${esc(k)}" title="${esc(t("w.remove"))}">×</button>
       </div>`;
   }).join("");
 }
@@ -673,11 +1209,12 @@ function watchChipsHtml() {
 let ddActive = 0;
 function searchResults(q) {
   q = q.trim().toLowerCase();
-  const hit = (c) => !q || [c.lname, c.name, c.key].some(v => v && v.toLowerCase().includes(q));
-  const starts = (c) => q && [c.lname, c.name].some(v => v && v.toLowerCase().startsWith(q)) ? 0 : 1;
+  // 中英文名都能搜，和当前显示语言无关
+  const hit = (c) => !q || [c.zh, c.en, c.lname, c.name, c.key].some(v => v && v.toLowerCase().includes(q));
+  const starts = (c) => q && [c.zh, c.en, c.lname, c.name].some(v => v && v.toLowerCase().startsWith(q)) ? 0 : 1;
   return catalogList().filter(hit).sort((a, b) =>
     starts(a) - starts(b) || (Number(a.rarity) || 0) - (Number(b.rarity) || 0)
-    || displayName(a).localeCompare(displayName(b), "zh"));
+    || displayName(a).localeCompare(displayName(b), LANG === "zh" ? "zh" : "en"));
 }
 function renderDropdown() {
   const dd = document.getElementById("watch-dd"), input = document.getElementById("watch-input");
@@ -687,13 +1224,13 @@ function renderDropdown() {
   dd.innerHTML = res.length ? res.map((c, i) => {
     const cls = "dd-item" + (watched.includes(c.key) ? " selected" : "") + (i === ddActive ? " active" : "")
               + (c.unlocked === false ? " locked" : "");
-    const sub = [c.lname ? c.name : "", rarityName(c.rarity), c.unlocked === false ? "未解锁" : ""].filter(Boolean).join(" · ");
+    const sub = [otherName(c), rarityName(c.rarity), c.unlocked === false ? t("w.locked") : ""].filter(Boolean).join(" · ");
     return `<div class="${cls}" data-key="${esc(c.key)}">
         ${spriteHtml(c.sprite, 0.42) || ""}
         <div><b>${esc(displayName(c))}</b><small>${esc(sub)}</small></div>
         <span class="check">✓</span>
       </div>`;
-  }).join("") : `<div class="dd-none">没有匹配的小丑</div>`;
+  }).join("") : `<div class="dd-none">${t("w.noMatch")}</div>`;
   dd.hidden = false;
   dd.querySelector(".dd-item.active")?.scrollIntoView({ block: "nearest" });
 }
@@ -734,16 +1271,16 @@ function refreshWatch() {
   if (sig === watchChipsSig) return;
   watchChipsSig = sig;
   chips.innerHTML = watchChipsHtml();
-  document.getElementById("watch-title").textContent = watched.length ? `高亮关注 · ${watched.length} 张` : "高亮关注";
+  document.getElementById("watch-title").textContent = watched.length ? t("w.titleN", watched.length) : t("w.title");
 }
 
 // 关注区是常驻 DOM（不随快照重画）—— 否则打字时每秒被重建一次，焦点和输入都会丢
 function initWatchUI(root) {
-  root.innerHTML = `<div class="sec-title2"><span id="watch-title">高亮关注</span><span class="line"></span></div>
+  root.innerHTML = `<div class="sec-title2"><span id="watch-title">${t("w.title")}</span><span class="line"></span></div>
     <div class="watch">
       <div class="watch-search">
         <input id="watch-input" type="text" autocomplete="off" spellcheck="false"
-               placeholder="搜索小丑（中文 / 英文），点击添加，可多选">
+               placeholder="${esc(t("w.placeholder"))}">
         <div id="watch-dd" class="watch-dd" hidden></div>
       </div>
       <div id="watch-chips" class="watch-chips"></div>
@@ -834,18 +1371,22 @@ function draw() {
   const app = document.getElementById("app");
 
   const mods = [];
-  if (shop.joker_max != null) mods.push(`槽位 ${shop.joker_max}`);
-  (s.pool_state?.used_vouchers || []).includes("v_illusion") && mods.push("幻象券");
-  if (s.rates?.edition > 1) mods.push(`版本率 ×${s.rates.edition}`);
-  if (s.pool_state?.showman) mods.push("演出家");
+  if (shop.joker_max != null) mods.push(t("mod.slots", shop.joker_max));
+  (s.pool_state?.used_vouchers || []).includes("v_illusion") && mods.push(t("mod.illusion"));
+  if (s.rates?.edition > 1) mods.push(t("mod.edRate", s.rates.edition));
+  if (s.pool_state?.showman) mods.push(t("mod.showman"));
 
   let html = `<header>
-    <div class="stat"><small>种子</small><b>${esc(run.seed || "?")}</b></div>
-    <div class="stat"><small>底注 Ante</small><b>${run.ante ?? "?"}</b></div>
-    <div class="stat"><small>金钱</small><b>$${run.dollars ?? "?"}</b></div>
-    <div class="stat"><small>下次 Reroll</small><b>$${shop.reroll_cost ?? "?"}</b></div>
+    <div class="stat"><small>${t("hdr.seed")}</small><b>${esc(run.seed || "?")}</b></div>
+    <div class="stat"><small>${t("hdr.ante")}</small><b>${run.ante ?? "?"}</b></div>
+    <div class="stat"><small>${t("hdr.money")}</small><b>$${run.dollars ?? "?"}</b></div>
+    <div class="stat"><small>${t("hdr.reroll")}</small><b>$${shop.reroll_cost ?? "?"}</b></div>
     <div class="grow"></div>
     <div class="mods">${mods.map(m => `<span class="tag">${esc(m)}</span>`).join("")}</div>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button class="${LANG === "zh" ? "on" : ""}" onclick="setLang('zh')">中文</button>
+      <button class="${LANG === "en" ? "on" : ""}" onclick="setLang('en')">EN</button>
+    </div>
   </header>`;
 
   // 当前标签
@@ -855,25 +1396,29 @@ function draw() {
 
   // 当前商店（居中）
   const cur = shop.jokers || [];
-  html += `<div class="sec-title">当前商店</div><div class="row shop-row"><div class="cards">
-    ${cur.length ? cur.map(c => cardHtml(c)).join("") : '<div class="banner" style="flex:1">当前不在商店</div>'}
-  </div></div>`;
+  const shopHtml = `<div class="sec-title">${t("shop.title")}</div><div class="row shop-row"><div class="cards">
+    ${cur.length ? cur.map(c => cardHtml(c)).join("") : `<div class="banner" style="flex:1">${t("shop.none")}</div>`}
+  </div></div>` + packsHtml(s);
 
-  // 页面分两块：上半部分（标题/标签/光环/商店）每次快照都重画；
-  // 队列可能多达 1600 张卡（深度 400），只在预测结果真的变了时才重画 ——
-  // computePrediction 在依赖没变时返回同一个对象，所以按对象身份判断即可。
-  // 否则打牌时快照每秒一变，就要每秒重建上千张卡。
-  // 中间的关注区（搜索框 + 已选条）是常驻的：只建一次，之后只更新已选条内容。
-  let top = document.getElementById("top"), wroot = document.getElementById("watch-root"),
-      qroot = document.getElementById("queue-root");
-  if (!top || !wroot || !qroot) {
-    app.innerHTML = `<div id="top"></div><div id="watch-root"></div><div id="queue-root"></div>`;
-    top = document.getElementById("top"); wroot = document.getElementById("watch-root");
-    qroot = document.getElementById("queue-root");
+  // 页面分几块：
+  //   #top / #shop-root（标题、标签、光环、当前商店）每次快照都重画；
+  //   #tags-root（跳过标签预测）内容变了才重画 —— 它带下拉框和按钮，每秒重建会把展开的下拉框关掉；
+  //   #watch-root（关注区）常驻，只建一次，之后只更新已选条；
+  //   #queue-root 可能多达 1600 张卡（深度 400），只在预测结果真的变了时才重画 ——
+  //   computePrediction 在依赖没变时返回同一个对象，所以按对象身份判断即可。
+  const ids = ["top", "tags-root", "shop-root", "watch-root", "queue-root"];
+  let [top, troot, sroot, wroot, qroot] = ids.map(id => document.getElementById(id));
+  if (!top || !troot || !sroot || !wroot || !qroot) {
+    app.innerHTML = ids.map(id => `<div id="${id}"></div>`).join("");
+    [top, troot, sroot, wroot, qroot] = ids.map(id => document.getElementById(id));
     lastQueuePred = undefined;
+    lastTagsHtml = null;
     initWatchUI(wroot);
   }
   top.innerHTML = html;
+  const th = tagsPredictHtml(s);
+  if (th !== lastTagsHtml) { troot.innerHTML = th; lastTagsHtml = th; }
+  sroot.innerHTML = shopHtml;
   // 负片覆盖的标记也画在队列里：开关、标签数量（用掉一个就少一个）变了也要重画
   const covSig = negOn ? JSON.stringify(negTagPlan(s)) : "";
   if (pred !== lastQueuePred || covSig !== lastCovSig) {
@@ -887,9 +1432,9 @@ function draw() {
   // 显示实际算预测的耗时：网页端算的就显示网页端耗时（mod 端预测默认已关）
   const pm = pred?.local ? pred.computeMs : s.meta?.predict_ms;
   document.getElementById("meta").textContent =
-    `Ante ${run.ante ?? "?"} · 预测 ${pred?.count || pred?.rerolls?.length || 0} 次`
-    + (pm != null ? ` · ${pred?.local ? "网页端" : "mod 端"}算 ${(+pm).toFixed(1)}ms` : "")
-    + ` · 快照 @ ${new Date((s.meta?.dumped_at || 0) * 1000).toLocaleTimeString()}`;
+    `Ante ${run.ante ?? "?"} · ${t("meta.pred", pred?.count || pred?.rerolls?.length || 0)}`
+    + (pm != null ? ` · ${t("meta.ms", !!pred?.local, (+pm).toFixed(1))}` : "")
+    + ` · ${t("meta.snap", new Date((s.meta?.dumped_at || 0) * 1000).toLocaleTimeString(LANG === "zh" ? "zh-CN" : "en-US"))}`;
 }
 
 let lastStamp = null;
@@ -902,7 +1447,8 @@ async function poll() {
     s = await r.json();
   } catch (e) {
     dot.className = "dot bad";
-    status.textContent = "无法读取 state.dat（游戏在运行吗？在局内吗？）— " + e.message;
+    status.textContent = t("status.readErr", e.message);
+    status.dataset.set = "1";
     return;
   }
   const stamp = s.meta?.dumped_at + "|" + JSON.stringify(s.shop?.jokers) + "|" + (s.prediction?.rerolls?.length);
@@ -913,13 +1459,16 @@ async function poll() {
     catch (e) {
       console.error("渲染失败:", e);
       dot.className = "dot bad";
-      status.textContent = "页面渲染出错（每秒重试，详情见控制台）— " + e.message;
+      status.textContent = t("status.renderErr", e.message);
+      status.dataset.set = "1";
       return;
     }
   }
   dot.className = "dot ok";
-  status.textContent = "已连接";
+  status.textContent = t("status.ok");
+  status.dataset.set = "1";
 }
+applyLangStatic();   // 页面标题、初始占位文字按当前语言
 applyWatchStyle();   // 上次保存的关注列表，页面一打开就生效
 loadCatalog();       // 小丑目录只拉一次（拿不到就每 5 秒重试）
 poll();

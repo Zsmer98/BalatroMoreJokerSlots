@@ -1,84 +1,101 @@
 # More Joker Slots
 
-一个 Balatro 的 Steamodded mod，包含两部分：
+**English** | [简体中文](README.zh-CN.md)
 
-1. **开局加成**（`main.lua`）：每副牌开局多给小丑牌槽位，并赠送若干张灵魂牌（The Soul）。
-   赠送多少张灵魂牌，就同时加多少个消耗牌槽位。两项数量都能在游戏内的 mod 设置里调。
-2. **商店预测面板**（`dump_state.lua` + `web/`）：
-   - mod 在局内把运行状态导出到 `state.dat`。
-   - 本地网页逐位复刻 LuaJIT 的随机数，预测接下来 N 次 reroll 的商店内容：卡牌类型、稀有度、具体是哪张小丑、版本。
-   - 其他功能：
-     - 光环（Aura）接下来会给什么版本，还差几张到多彩
-     - 当前拥有的标签汇总
-     - 高亮关注：按中文或英文名搜索小丑并多选，队列里用动态彩虹边框标出来
-     - 负片覆盖：按手上的负片标签（含双倍标签的复制）标出后面哪些商店小丑会变成负片
+A Steamodded mod for Balatro with two parts:
 
-## 环境
+1. **Starting bonus** (`main.lua`): every deck starts with extra Joker slots and a number of The Soul cards.
+   Each Soul card also adds one consumable slot, so they all fit. Both amounts can be changed in the mod's in-game settings.
+2. **Shop prediction panel** (`dump_state.lua` + `web/`):
+   - During a run, the mod exports the game state to `state.dat`.
+   - A local web page reproduces LuaJIT's random number generator bit for bit and predicts the next N shop rerolls: card type, rarity, which exact Joker, and edition.
+   - More features:
+     - Aura forecast: which edition the next Aura gives, and how many until Polychrome
+     - A summary of the tags you own
+     - Watchlist: search Jokers by English or Chinese name, pick several, and they get an animated rainbow border in the queue
+     - Negative coverage: marks which upcoming shop Jokers your Negative Tags (including Double Tag copies) will turn Negative
+     - Skip tag forecast: from the seed, the skip tags of every Small and Big Blind for antes 1–39, listing where the remaining Negative Tags are
+     - Booster pack preview: what each pack in the shop will contain
+       - All five pack kinds are supported, taking into account held cards, Showman, Telescope and Omen Globe
+       - Standard packs show rank, suit, enhancement, edition and seal; if a pack contains The Soul, the panel shows which Legendary Joker it would create
+       - After you open a pack, the panel checks it card by card against the prediction made before opening
 
-- 测试环境：Windows，Balatro 1.0.1o-FULL，Steamodded 1.0.0~BETA-1814a，Lovely 0.9.0
-- 网页面板需要 [Node.js](https://nodejs.org/)，没有第三方依赖
+## Languages
 
-## 安装
+- **Web panel**: switch any time with the "中文 / EN" buttons in the top-right corner; your choice is remembered.
+  - Until you pick one, the panel follows the game's language.
+  - Card, tag and pack names use the game's own official English and Chinese names.
+- **In game**: the mod's settings screen and its name and description in the Mods menu follow the game's language setting.
+  - Translations are in `localization/en-us.lua` and `localization/zh_CN.lua`.
+  - Other languages show English.
 
-把本仓库放到 `%APPDATA%\Balatro\Mods\MoreJokerSlots`，有两种方式：
+## Requirements
 
-- 直接 clone 到那个位置；
-- 或者 clone 到别处，再建一个目录联接指过去（cmd）：
+- Tested on Windows with Balatro 1.0.1o-FULL, Steamodded 1.0.0~BETA-1814a and Lovely 0.9.0
+- The web panel needs [Node.js](https://nodejs.org/); there are no third-party dependencies
+
+## Installation
+
+Put this repository at `%APPDATA%\Balatro\Mods\MoreJokerSlots`. Either:
+
+- clone it directly into that folder, or
+- clone it somewhere else and point a directory junction at it (cmd):
 
 ```bat
 mklink /J "%APPDATA%\Balatro\Mods\MoreJokerSlots" "C:\path\to\BalatroMoreJokerSlots"
 ```
 
-## 卡图（首次使用前）
+## Card art (one-time setup)
 
-网页上的卡图用的是游戏原版图集。它的版权属于游戏方，所以没有放进仓库，需要从你自己的 `Balatro.exe` 里解出来。
-在仓库根目录执行下面两条命令（用的是 Windows 自带的 `tar`；Steam 装在别的位置的话，改一下 exe 路径）：
+The panel uses the game's original sprite sheets. They are copyrighted by the game's developer and publisher, so they are not in this repository; extract them from your own `Balatro.exe`.
+Run these two commands in the repository folder (this uses the `tar` that ships with Windows; adjust the exe path if Steam is installed elsewhere):
 
 ```bat
 mkdir web\atlas
 tar -xf "C:\Program Files (x86)\Steam\steamapps\common\Balatro\Balatro.exe" -C web\atlas --strip-components 3 resources/textures/2x/Jokers.png resources/textures/2x/Tarots.png resources/textures/2x/Enhancers.png
 ```
 
-## 使用
+## Usage
 
-1. 启动游戏，进入一局（mod 只在局内导出状态）。
-2. 在仓库目录运行 `node tools/serve.js`，然后用浏览器打开 <http://localhost:8666/>。
-3. 页面每秒读取一次 `state.dat`。你在游戏里 reroll、买卖牌、用光环之后，页面都会自动刷新。
+1. Start the game and enter a run (the mod only exports state during a run).
+2. In the repository folder, run `node tools/serve.js`, then open <http://localhost:8666/> in a browser.
+3. The page reads `state.dat` every second, so it refreshes on its own after you reroll, buy or sell cards, or use an Aura.
 
-预测的前提是「从当前状态开始，一直 reroll」。买牌、用消耗牌等改变了卡池或状态之后，页面会按新状态重新计算。
+Predictions assume you keep rerolling from the current state. After anything that changes the pools or the state (buying a card, using a consumable, and so on), the page recomputes from the new state.
 
-## 配置（`config.lua`）
+## Configuration (`config.lua`)
 
-| 项 | 默认 | 说明 |
+| Key | Default | Description |
 |---|---|---|
-| `extra_slots` | 4 | 额外的小丑牌槽位（游戏内设置可调，0–10） |
-| `soul_count` | 35 | 开局赠送的灵魂牌数量（游戏内设置可调，0–35） |
-| `predict_rerolls` | 40 | mod 端预测的深度。只在打开 `mod_predict` 时用到；网页端的深度在页面上选 |
-| `record_history` | false | 诊断用：在商店里把每次 reroll 的随机流变化写进 `history.log`（上限 5MB） |
-| `mod_predict` | false | 诊断用：在游戏内也算一份队列写进 `state.dat`，用来和网页端的结果对照 |
+| `extra_slots` | 4 | Extra Joker slots (adjustable in the in-game settings, 0–10) |
+| `soul_count` | 35 | Number of Soul cards given at the start (adjustable in the in-game settings, 0–35) |
+| `predict_rerolls` | 40 | Depth of the mod-side prediction. Only used when `mod_predict` is on; the web panel has its own depth selector |
+| `record_history` | false | Diagnostics: in the shop, log how the random streams change on every reroll to `history.log` (capped at 5 MB) |
+| `mod_predict` | false | Diagnostics: also compute the queue in game and write it to `state.dat`, to compare against the web panel |
 
-`config.lua` 里的只是**默认值**。Steamodded 会把设置存到 `%APPDATA%\Balatro\config\MoreJokerSlots.jkr`，之后都以那个文件为准（`smods/src/ui.lua` 的 `SMODS.load_mod_config`）。
-所以要改诊断开关，应该改那个 `.jkr` 文件（或者删掉它，恢复成 `config.lua` 的默认值），然后重启游戏。
+The values in `config.lua` are only **defaults**. Steamodded saves your settings to `%APPDATA%\Balatro\config\MoreJokerSlots.jkr` and uses that file from then on (`SMODS.load_mod_config` in `smods/src/ui.lua`).
+To change a diagnostic switch, edit that `.jkr` file (or delete it to go back to the `config.lua` defaults), then restart the game.
 
-## 文件
+## Files
 
-| 文件 | 作用 |
+| File | Purpose |
 |---|---|
-| `main.lua` | 入口：开局加成，并加载下面两个文件 |
-| `dump_state.lua` | 运行时状态导出（`state.dat`、`catalog.dat`） |
-| `predict.lua` | mod 端预测（Lua 版，默认不启用） |
-| `tools/luajit_rng.js` | LuaJIT 2.0.5 `math.random` 的逐位复刻（自测：`node tools/luajit_rng.js`） |
-| `tools/predict.js` | 网页端预测，是 `predict.lua` 的 JS 版 |
-| `tools/serve.js` | 零依赖的本地服务器 |
-| `tools/aura.js` | 命令行工具：直接读存档，算光环接下来给什么版本（`node tools/aura.js`） |
-| `tools/steps.js` | 诊断工具：分析 `history.log` |
-| `probe_rng.lua` | RNG 探针，做回归验证用，默认不加载 |
-| `web/index.html` | 预测面板 |
+| `main.lua` | Entry point: the starting bonus, and loads the two files below |
+| `dump_state.lua` | Exports the game state at runtime (`state.dat`, `catalog.dat`) |
+| `predict.lua` | Mod-side prediction (Lua version, off by default) |
+| `localization/` | English and Chinese text for the in-game parts (mod settings, Mods menu description) |
+| `tools/luajit_rng.js` | Bit-exact reimplementation of LuaJIT 2.0.5 `math.random` (self-test: `node tools/luajit_rng.js`) |
+| `tools/predict.js` | Web-side prediction for the shop queue and booster packs; a JS port and extension of `predict.lua` |
+| `tools/serve.js` | Zero-dependency local web server |
+| `tools/aura.js` | Command-line tool: reads the save file and prints upcoming Aura editions (`node tools/aura.js`) |
+| `tools/steps.js` | Diagnostic tool: analyzes `history.log` |
+| `probe_rng.lua` | RNG probe used for regression checks; not loaded by default |
+| `web/index.html` | The prediction panel |
 
-## 注意
+## Notes
 
-- 运行时生成的数据用的是 `.dat` / `.log` 扩展名，这是有意为之。
-  Steamodded 的加载器会把 mod 文件夹里**文件名含 `.json`** 的文件都当成 mod 清单去读取和解析：
-  `loader.lua` 里匹配的是 `'%.json'`，没有锚定到结尾。
-  所以别往这个文件夹里放其他 `.json` 文件，比如 `.vscode/settings.json`。
-- 这是非官方 mod，与游戏的开发方和发行方无关。卡图等游戏素材的版权归原作者所有。
+- Runtime data files deliberately use the `.dat` and `.log` extensions.
+  Steamodded's loader reads and parses **any file whose name contains `.json`** in a mod folder as a mod manifest:
+  `loader.lua` matches `'%.json'` without anchoring it to the end of the name.
+  So don't put other `.json` files in this folder, such as `.vscode/settings.json`.
+- This is an unofficial mod, not affiliated with the game's developer or publisher. Card art and other game assets belong to their respective owners.

@@ -9,6 +9,13 @@ end
 --------------------------------------------------
 -- 配置界面
 --------------------------------------------------
+-- 文字跟随游戏语言：localization/en-us.lua、zh_CN.lua（SMODS 自动加载，其他语言回落到英文）
+local function L(key, fallback)
+    local ok, s = pcall(localize, key)
+    if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then return s end
+    return fallback
+end
+
 mod.config_tab = function()
     -- create_slider 会立刻 string.format 这个值，nil 会直接崩
     mod.config.extra_slots = tonumber(mod.config.extra_slots) or 4
@@ -22,14 +29,14 @@ mod.config_tab = function()
         },
         nodes = {
             create_slider({
-                label = "额外小丑牌槽位",
+                label = L("mjs_extra_slots", "Extra Joker Slots"),
                 label_scale = 0.5, text_scale = 0.5,
                 min = 0, max = 10, decimal_places = 0,
                 ref_table = mod.config, ref_value = "extra_slots",
                 w = 4, h = 0.4, colour = G.C.BLUE,
             }),
             create_slider({
-                label = "开局灵魂牌数量",
+                label = L("mjs_soul_count", "Starting Soul Cards"),
                 label_scale = 0.5, text_scale = 0.5,
                 min = 0, max = 35, decimal_places = 0,
                 ref_table = mod.config, ref_value = "soul_count",
@@ -70,6 +77,29 @@ function Back:apply_to_run(...)
     end
 
     return ref_apply_to_run(self, ...)
+end
+
+--------------------------------------------------
+-- 兼容修复：使用消耗牌被打断后，读档崩溃 / 操作被锁住
+--
+-- G.FUNCS.use_card 开头设 G.TAROT_INTERRUPT 和「使用」锁（button_callbacks.lua:2199、2209），
+-- 要等效果事件都跑完，最后一个事件才清掉（:2311-2312）。如果中途回了主菜单（比如画面卡住），
+-- 「继续」会先清空事件队列（:3024），那个收尾事件就没了，两个标记一直留着：
+--   · SMODS 的 CardArea:handle_card_limit 看到 TAROT_INTERRUPT 就跳过 extra_slots_used 的初始化，
+--     读档时新建消耗牌区域直接崩溃：utils.lua:3662 attempt to perform arithmetic on field 'extra_slots_used'
+--   · 就算不崩，「使用」锁也一直锁着
+-- 开局 / 读档时不可能有正在使用的消耗牌，所以在 start_run 前把残留的标记清掉。
+--------------------------------------------------
+local ref_start_run = Game.start_run
+function Game:start_run(...)
+    if G.TAROT_INTERRUPT ~= nil then
+        sendDebugMessage("[MJS] start_run: 清掉残留的 G.TAROT_INTERRUPT = " .. tostring(G.TAROT_INTERRUPT))
+        G.TAROT_INTERRUPT = nil
+    end
+    if G.CONTROLLER and G.CONTROLLER.locks and G.CONTROLLER.locks.use then
+        G.CONTROLLER.locks.use = false
+    end
+    return ref_start_run(self, ...)
 end
 
 --------------------------------------------------
