@@ -1,0 +1,12 @@
+{
+    "id": "MoreJokerSlots",
+    "name": "More Joker Slots",
+    "display_name": "More Joker Slots",
+    "author": ["Shawn"],
+    "description": "Extra joker slots and starting Soul cards for every deck.",
+    "prefix": "mjs",
+    "main_file": "main.lua",
+    "priority": 0,
+    "badge_colour": "5CB1FF",
+    "version": "1.0.0"
+}

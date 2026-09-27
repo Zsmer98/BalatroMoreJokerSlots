@@ -1,0 +1,20 @@
+# 游戏运行时生成的数据（含当前这局的种子等状态），不进仓库
+state.dat
+catalog.dat
+history.log
+probe_result.txt
+# 旧版文件名（dump_state.lua 加载时会自动删除）
+state.json
+history.jsonl
+history.jsonl.bloated
+
+# 从 Balatro.exe 提取的原版卡图：版权属于游戏方，不进仓库（生成方法见 README）
+web/atlas/
+
+# 开发笔记只留在本地
+NOTES-shop-rng.md
+
+# 备份 / 系统文件
+*.bak
+Thumbs.db
+desktop.ini

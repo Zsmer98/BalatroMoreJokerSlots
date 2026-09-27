@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoreJokerSlots 商店预测</title>
+<style>
+  :root {
+    --bg: #1c2528; --panel: #26333a; --panel2: #2f4048; --ink: #e8eef0;
+    --muted: #8fa3ab; --line: #3a4d56;
+    --r1: #6a8dbb; --r2: #4caf72; --r3: #e64539; --r4: #a256c4;
+    --tarot: #b05cd6; --planet: #4c96d6; --spectral: #6a5acd; --card: #c49a4a;
+    /* 卡片布局尺寸：预测队列的网格按这些算每个 reroll 块多宽 */
+    --card-w: 132px; --rlabel-w: 54px; --gap: 10px;
+    --watch: #36e2c2;   /* 高亮关注色：和负片紫、多彩金区分开 */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 16px 20px 60px;
+  }
+  h1 { font-size: 16px; margin: 0; letter-spacing: .5px; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+  header {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding: 12px 16px; background: var(--panel); border-radius: 10px;
+    border: 1px solid var(--line); margin-bottom: 18px;
+  }
+  .stat { display: flex; flex-direction: column; line-height: 1.2; }
+  .stat b { font-size: 18px; }
+  .stat small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .grow { flex: 1; }
+
+  .sec-title {
+    font-size: 12px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1px; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .sec-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .row { display: flex; align-items: stretch; gap: var(--gap); margin-bottom: 10px; }
+  .rlabel {
+    flex: 0 0 var(--rlabel-w); display: flex; flex-direction: column; justify-content: center;
+    align-items: center; background: var(--panel); border-radius: 8px;
+    border: 1px solid var(--line); font-weight: 700; color: var(--muted);
+  }
+  .rlabel small { font-size: 10px; font-weight: 400; }
+  .cards { display: flex; gap: var(--gap); flex-wrap: wrap; flex: 1; }
+
+  /* 当前商店：卡片居中 */
+  .shop-row .cards { justify-content: center; }
+
+  /* 预测队列：按屏幕宽度自动决定一行放几个 reroll（--slots 由页面按槽位数给出） */
+  .queue {
+    display: grid; justify-content: center; gap: 14px 26px;
+    --block-w: calc(var(--rlabel-w) + var(--gap) + var(--slots, 4) * var(--card-w) + (var(--slots, 4) - 1) * var(--gap));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--block-w)), var(--block-w)));
+  }
+  .queue .row { margin-bottom: 0; }
+
+  /* 当前标签 + 光环预测并排（窄屏自动变上下） */
+  .duo { display: flex; flex-wrap: wrap; gap: 0 36px; align-items: flex-start; }
+  .duo > div { flex: 1 1 380px; min-width: 0; }
+
+  .card {
+    width: var(--card-w); min-height: 150px; background: var(--panel2);
+    border-radius: 9px; border: 1px solid var(--line); overflow: hidden;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .card .bar { height: 6px; }
+  .card .body { padding: 9px 10px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .card .name { font-weight: 600; font-size: 13px; line-height: 1.25; }
+  .card .type { font-size: 11px; color: var(--muted); margin-top: auto; }
+  .card .rar { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+  .card.placeholder { opacity: .55; border-style: dashed; }
+  .card.placeholder .name { color: var(--muted); font-style: italic; font-weight: 500; }
+  .sprite { margin: 6px auto 2px; background-repeat: no-repeat; image-rendering: auto; }
+  .sprite-fallback { margin: 6px auto 2px; display: flex; align-items: center; justify-content: center;
+    color: #0006; font-size: 11px; font-weight: 700; border-radius: 6px; }
+
+  .ed {
+    display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px;
+    font-weight: 700; align-self: flex-start; color: #111;
+  }
+  .ed-foil { background: linear-gradient(120deg,#a8d8ff,#dfefff,#8ec5ff); }
+  .ed-holo { background: linear-gradient(120deg,#ff9bb3,#ffe6a0,#9bffcf,#9bd4ff); }
+  .ed-poly { background: linear-gradient(120deg,#ffd76a,#ff9de2,#8affd1,#ffd76a); }
+  .ed-neg  { background: linear-gradient(120deg,#5a3a8a,#2a1a4a); color: #e8dfff; }
+
+  footer {
+    position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 20px;
+    background: #161d20; border-top: 1px solid var(--line); font-size: 12px;
+    color: var(--muted); display: flex; align-items: center; gap: 12px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #666; }
+  .dot.ok { background: #4caf72; box-shadow: 0 0 8px #4caf72; }
+  .dot.bad { background: #e64539; }
+  .banner {
+    padding: 40px; text-align: center; color: var(--muted);
+    background: var(--panel); border-radius: 10px; border: 1px dashed var(--line);
+  }
+  .mods { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+
+  /* 负片强化：整卡紫色辉光 + 角标 + 轻脉动，一眼可辨 */
+  .card.negative {
+    border-color: #c07fe0;
+    background: linear-gradient(180deg, #382a50 0%, var(--panel2) 62%);
+    box-shadow: 0 0 0 2px #b06fd6, 0 0 18px 3px rgba(176,111,214,.55);
+    animation: negpulse 1.9s ease-in-out infinite;
+  }
+  @keyframes negpulse {
+    0%, 100% { box-shadow: 0 0 0 2px #a860cf, 0 0 13px 2px rgba(176,111,214,.42); }
+    50%      { box-shadow: 0 0 0 2px #d6a6ef, 0 0 24px 6px rgba(176,111,214,.80); }
+  }
+  .negbadge {
+    position: absolute; top: 0; right: 0; z-index: 3;
+    background: linear-gradient(120deg,#7a4bb5,#c07fe0);
+    color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .5px;
+    padding: 3px 8px; border-bottom-left-radius: 9px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.4);
+  }
+  .card.negative .name { color: #f0e6ff; }
+
+  /* 负片标签覆盖：虚线紫框 + 角标，和「自带负片」的实线辉光区分开（两者不会同时出现：自带版本的不吃标签） */
+  .card.negtag {
+    border: 2px dashed #b06fd6;
+    background: linear-gradient(180deg, #2c2340 0%, var(--panel2) 62%);
+  }
+  .negtag-badge {
+    position: absolute; top: 0; right: 0; z-index: 3;
+    background: #2a1a4a; color: #e3cffb; font-size: 10px; font-weight: 800;
+    padding: 2px 7px; border-bottom-left-radius: 8px;
+    border-left: 1px dashed #b06fd6; border-bottom: 1px dashed #b06fd6;
+  }
+  .negcov-btn {
+    background: var(--panel2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .negcov-btn:hover { color: var(--ink); }
+  .negcov-btn.on { background: #3a2a55; border-color: #b06fd6; color: #f0e6ff; font-weight: 700; }
+  .negcov-info { margin: -2px 0 12px; font-size: 13px; }
+  .negcov-info b { color: #e3cffb; }
+  .negcov-info small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  /* 区块标题（带右侧控件） */
+  .sec-title2 {
+    display: flex; align-items: center; gap: 10px; margin: 20px 0 10px;
+    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+  }
+  .sec-title2 .line { flex: 1; height: 1px; background: var(--line); }
+  /* 深度选择 */
+  .pager { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: normal;
+           flex-wrap: wrap; justify-content: flex-end; }
+  /* 窄屏时控件整组换行，不要把「深度 [40] 次」从中间拆开，标题也不折行 */
+  .depth-ctl { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sec-title2 > span:first-child { white-space: nowrap; }
+  .pager select, .pager .depth-input {
+    background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .pager .depth-input { width: 76px; cursor: text; }
+
+  /* 全部 reroll 一次铺开时（深度 400 = 1600 张卡），屏幕外的块跳过渲染，滚到才画。
+     content-visibility:auto 同时带 paint containment：超出行边界的绘制会被裁掉，
+     卡片的外发光（负片辉光、高亮关注）就只剩卡与卡之间那一截。
+     所以给行留 16px 内边距、再用 -16px 外边距抵消 —— 布局一像素不动，发光有地方画。 */
+  .queue .row { content-visibility: auto; contain-intrinsic-block-size: auto 230px; padding: 16px; margin: -16px; }
+
+  /* 当前标签：按种类汇总 */
+  .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-chip {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    padding: 4px 11px; border-radius: 16px; font-size: 13px;
+    background: var(--panel2); border: 1px solid var(--line);
+  }
+  .tag-chip b { color: #ffd76a; font-size: 14px; }
+  .tags-empty { color: var(--muted); font-size: 12px; }
+
+  /* 光环预测 */
+  .aura-strip { display: flex; gap: 6px; flex-wrap: wrap; align-items: stretch; }
+  .aura-cell {
+    min-width: 62px; padding: 6px 8px; border-radius: 8px; text-align: center;
+    border: 1px solid var(--line); background: var(--panel2); position: relative;
+  }
+  .aura-cell .n { font-size: 10px; color: var(--muted); }
+  .aura-cell .e { font-size: 11px; font-weight: 700; margin-top: 2px; color: #111;
+    border-radius: 4px; padding: 1px 4px; }
+  .aura-cell.poly {
+    border-color: #ffd76a;
+    box-shadow: 0 0 0 2px #ffd76a, 0 0 14px 2px rgba(255,215,106,.45);
+  }
+  .aura-cell.poly .n { color: #ffd76a; font-weight: 700; }
+  .aura-next { color: #ffd76a; font-weight: 700; text-transform: none; letter-spacing: normal; }
+  .aura-note { color: var(--muted); font-size: 12px; margin: 8px 2px 0; text-transform: none; letter-spacing: normal; }
+
+  /* 高亮关注：搜索框 + 下拉多选 + 已选卡片条 */
+  .watch { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .watch-search { position: relative; flex: 0 0 320px; max-width: 100%; }
+  .watch-search input {
+    width: 100%; background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 13px;
+  }
+  .watch-search input:focus { outline: none; border-color: var(--watch); }
+  .watch-dd {
+    position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
+    max-height: 380px; overflow-y: auto; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5);
+  }
+  .dd-item { display: flex; align-items: center; gap: 10px; padding: 5px 10px; cursor: pointer; }
+  .dd-item:hover, .dd-item.active { background: var(--panel2); }
+  .dd-item b { font-size: 13px; font-weight: 600; }
+  .dd-item small { display: block; color: var(--muted); font-size: 11px; }
+  .dd-item .check { margin-left: auto; color: var(--watch); font-weight: 800; visibility: hidden; }
+  .dd-item.selected .check { visibility: visible; }
+  .dd-item.locked { opacity: .5; }
+  .dd-none { padding: 10px 12px; color: var(--muted); font-size: 12px; }
+  .watch-chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; align-items: center; }
+  .watch-chip {
+    display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 4px;
+    border-radius: 10px; background: var(--panel2); border: 2px solid var(--watch); cursor: pointer;
+  }
+  .watch-chip:hover { background: #1f4d47; }
+  .watch-chip b { font-size: 13px; font-weight: 600; display: block; }
+  .watch-chip small { display: block; font-size: 11px; color: var(--muted); }
+  .watch-chip small.hit { color: var(--watch); font-weight: 700; }
+  .watch-chip small.now { color: #ffd76a; font-weight: 700; }
+  .watch-chip .x { background: none; border: none; color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+  .watch-chip .x:hover { color: var(--ink); }
+  .dd-item .sprite, .watch-chip .sprite { margin: 0; flex: none; border-radius: 3px; }
+  .watch-empty { color: var(--muted); font-size: 12px; }
+  /* 点关注条跳到队列里第一次出现处时闪一下 */
+  @keyframes watchflash { 0%, 100% { transform: none; } 35% { transform: scale(1.08); } }
+  .card.flash { animation: watchflash .55s ease 2; z-index: 2; }
+
+  /* 高亮关注的动画（选择器由 applyWatchStyle 按关注列表动态生成，这里只放关键帧）：
+     彩虹边框旋转（--wa 注册成角度才能被动画插值）+ 外发光换色 + 角标彩虹流动 */
+  @property --wa { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @keyframes watchspin { to { --wa: 360deg; } }
+  @keyframes watchglow {
+    0%, 100% { box-shadow: 0 0 0 2px #ff4d6d, 0 0 18px 4px rgba(255, 77, 109, .6); }
+    25%      { box-shadow: 0 0 0 2px #ffd166, 0 0 18px 4px rgba(255, 209, 102, .6); }
+    50%      { box-shadow: 0 0 0 2px #2ee6a8, 0 0 18px 4px rgba(46, 230, 168, .6); }
+    75%      { box-shadow: 0 0 0 2px #4cc9f0, 0 0 18px 4px rgba(76, 201, 240, .6); }
+  }
+  @keyframes watchbadge { to { background-position: 300% 0; } }
+  /* 系统关了动画效果：不转、不闪，只留静态的彩色边框 */
+  @media (prefers-reduced-motion: reduce) {
+    .card::before, .card::after { animation: none !important; }
+    .card { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div id="app"><div class="banner">正在连接游戏数据…</div></div>
+
+  <footer>
+    <span class="dot" id="dot"></span>
+    <span id="status">等待 state.dat…</span>
+    <span class="grow"></span>
+    <span id="meta"></span>
+  </footer>
+
+<script src="/tools/luajit_rng.js"></script>
+<script src="/tools/predict.js"></script>
+<script>
+const RARITY = {
+  "1": { name: "普通", color: "var(--r1)" },
+  "2": { name: "罕见", color: "var(--r2)" },
+  "3": { name: "稀有", color: "var(--r3)" },
+  "4": { name: "传奇", color: "var(--r4)" },
+};
+const SETCOL = { Tarot: "var(--tarot)", Planet: "var(--planet)", Spectral: "var(--spectral)",
+                 Base: "var(--card)", Enhanced: "var(--card)", Default: "var(--card)" };
+const SETNAME = { Joker: "小丑", Tarot: "塔罗牌", Planet: "星球牌", Spectral: "幻灵牌",
+                  Base: "扑克牌", Enhanced: "附魔牌", Default: "扑克牌" };
+const EDITION = {
+  e_foil: { cls: "ed-foil", name: "闪箔" }, e_holo: { cls: "ed-holo", name: "全息" },
+  e_polychrome: { cls: "ed-poly", name: "多彩" }, e_negative: { cls: "ed-neg", name: "负片" },
+};
+
+let LOC = {}, SPRITES = {};
+const nameOf = (key) => LOC[key] || key || "?";
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+// 图集图片：从 Balatro.exe 提取的原版 2x 图集（web/atlas/*.png）。
+// 运行时 atlas 名（dump 的 sprite.a）-> exe 原版文件名。原版消耗牌都在 Tarots.png。
+const ATLAS_FILE = { Joker: "Jokers", Tarot: "Tarots", Planet: "Tarots", Spectral: "Tarots",
+                     centers: "Enhancers", Enhanced: "Enhancers", Default: "Enhancers" };
+// 各图集像素尺寸（2x）。逻辑格子 71×95，2x 每格 142×190。
+const ATLAS_DIM = { Jokers: [1420, 3040], Tarots: [1420, 1140], Enhancers: [994, 950] };
+const CELL_W = 71, CELL_H = 95, TEX = 2;   // 逻辑格子 & 2x 缩放
+const DISP = 1.18;                         // 卡图显示放大
+
+// 返回 sprite 图的 HTML；拿不到坐标/图集则返回 null（调用方回退到色块）
+// disp：显示缩放，默认卡片大图；搜索列表/关注条用小缩略图
+function spriteHtml(sp, disp = DISP) {
+  if (!sp || sp.a == null || sp.x == null || sp.y == null) return null;
+  const file = ATLAS_FILE[sp.a];
+  const dim = file && ATLAS_DIM[file];
+  if (!dim) return null;
+  const w = CELL_W * disp, h = CELL_H * disp;
+  // 2x 图缩到逻辑尺寸再按 disp 放大
+  const bgW = dim[0] / TEX * disp, bgH = dim[1] / TEX * disp;
+  const pos = (x, y) => `${-x * CELL_W * disp}px ${-y * CELL_H * disp}px`;
+  // 传奇 / 全息影像：脸（sp.s，同一张图集）叠在底框上。CSS 多重背景里先写的在上层
+  const layers = sp.s && sp.s.x != null && sp.s.y != null ? [pos(sp.s.x, sp.s.y), pos(sp.x, sp.y)] : [pos(sp.x, sp.y)];
+  const img = `url('/web/atlas/${file}.png')`;
+  return `<div class="sprite" style="width:${w}px;height:${h}px;`
+    + `background-image:${layers.map(() => img).join(",")};`
+    + `background-size:${bgW}px ${bgH}px;background-position:${layers.join(",")}"></div>`;
+}
+
+// 渲染一张卡。c 可能来自当前商店（有 name/set/rarity/edition/sprite）
+// 或来自预测（有 key/set/rarity/edition，name 查 LOC，sprite 查 SPRITES[key]）。
+// negK：「负片覆盖」打开时，这张会用掉第几个负片标签（没有就不传）。
+// 注意别写成 arr.map(cardHtml) —— map 会把下标当第二个参数传进来。
+function cardHtml(c, negK) {
+  if (!c) return `<div class="card placeholder"><div class="bar"></div><div class="body"><div class="name">—</div></div></div>`;
+
+  const set = c.set;
+  const isJoker = set === "Joker";
+  const isPhysical = set === "Base" || set === "Enhanced" || set === "Default";
+
+  let title, rarHtml = "";
+  if (isJoker) {
+    title = c.key ? (c.name || nameOf(c.key)) : "（空池兜底）";
+    const r = c.rarity != null ? RARITY[String(c.rarity)] : null;
+    if (r) rarHtml = `<div class="rar" style="color:${r.color}">${r.name}</div>`;
+  } else if (isPhysical) {
+    // 实体牌牌面本版不预测（预测的没 key；当前商店牌面未 dump），显示类型名
+    title = SETNAME[set] || "扑克牌";
+  } else {
+    title = c.name || nameOf(c.key);
+  }
+
+  const barColor = isJoker
+    ? (c.rarity != null ? RARITY[String(c.rarity)]?.color : "var(--muted)")
+    : (SETCOL[set] || "var(--muted)");
+
+  let edHtml = "";
+  if (c.edition && EDITION[c.edition]) {
+    const e = EDITION[c.edition];
+    edHtml = `<span class="ed ${e.cls}">${e.name}</span>`;
+  }
+
+  // 卡图：当前商店卡带 c.sprite；预测卡用 key 查 SPRITES。实体牌无牌面 → 不出图。
+  const sp = c.sprite || (c.key && SPRITES[c.key]) || null;
+  let visual = isPhysical ? null : spriteHtml(sp);
+  if (!visual) {
+    // 回退：类型/稀有度色块占位
+    const w = CELL_W * DISP, h = CELL_H * DISP;
+    visual = `<div class="sprite-fallback" style="width:${w}px;height:${h}px;background:${barColor}">`
+      + `${isPhysical ? (SETNAME[set] || "牌") : ""}</div>`;
+  }
+
+  const isNeg = c.edition === "e_negative";
+  let cls = (isPhysical && !c.key) ? "card placeholder" : "card";
+  if (isNeg) cls += " negative";
+  else if (negK) cls += " negtag";
+  const badge = isNeg ? `<div class="negbadge">★ 负片</div>`
+    : negK ? `<div class="negtag-badge" title="第 ${negK} 个负片标签会用在这张：变成负片，并且免费">负片标签 #${negK}</div>`
+    : "";
+  // data-key 供「高亮关注」用：关注列表变化时只改一段动态 CSS，不用重画上千张卡
+  return `<div class="${cls}" data-key="${esc(c.key || "")}">
+    ${badge}
+    <div class="bar" style="background:${barColor}"></div>
+    <div class="body">
+      ${rarHtml}
+      ${visual}
+      <div class="name">${esc(title)}</div>
+      ${edHtml}
+      <div class="type">${SETNAME[set] || set || "?"}</div>
+    </div>
+  </div>`;
+}
+
+// render(s) 在快照变化时调用。队列不再分页：选定深度的全部 reroll 一次铺开。
+let lastState = null;
+let lastQueuePred;   // 队列区上次渲染用的预测对象（身份不变 → 不重画队列）
+let lastCovSig = ""; // 队列区上次渲染时的负片覆盖参数（开关 + 标签数）
+let predSerial = 0;  // 队列每重画一次 +1（关注条据此判断「出现次数」要不要重算）
+
+function render(s) { lastState = s; draw(); }
+
+// ---- 当前标签（种类 × 数量）----
+// 数据来自 mod 的 owned.tags（已按数量从多到少排好，名字是游戏内本地化名）。
+// schema < 2 说明是旧版 dump，还没有这个字段 → 提示重启，而不是误报「没有标签」。
+function tagsHtml(s) {
+  const schema = s.meta?.schema || 1;
+  const tags = s.owned?.tags || [];
+  let body;
+  if (schema < 2) {
+    body = `<span class="tags-empty">需要重启游戏后才有标签数据</span>`;
+  } else if (!tags.length) {
+    body = `<span class="tags-empty">当前没有标签</span>`;
+  } else {
+    body = tags.map(t => `<span class="tag-chip">${esc(t.name || t.key)} <b>×${t.count}</b></span>`).join("");
+  }
+  const total = tags.reduce((a, t) => a + (t.count || 0), 0);
+  const title = tags.length ? `当前标签 · ${tags.length} 种 ${total} 个` : "当前标签";
+  return `<div class="sec-title2"><span>${title}</span><span class="line"></span></div>
+    <div class="tags-row">${body}</div>`;
+}
+
+// ---- 光环（Aura）预测 ----
+// card.lua:1516 → poll_edition('aura', nil, no_neg=true, guaranteed=true)
+// 权重 foil20/holo14/poly3/neg3；负片被排除后其权重顺延给多彩，所以实际是：
+//   d>0.85 多彩(15%) / d>0.5 全息(35%) / 其余 闪箔(50%)
+const AURA_SHOW = 5;     // 只展示接下来 5 张
+const AURA_SCAN = 100;   // 但往后找多彩找到 100 张（每张 15%，100 张内没有的概率 ~1e-7）
+function auraEdition(d) {
+  if (d > 0.85) return { cls: "ed-poly", name: "多彩", poly: true };
+  if (d > 0.5)  return { cls: "ed-holo", name: "全息", poly: false };
+  return { cls: "ed-foil", name: "闪箔", poly: false };
+}
+// 返回 {list:[{n,d,ed}]（前 AURA_SHOW 张）, nextPoly} —— 拿不到 RNG 数据时返回 null。
+// 每次重画都会调用，所以按「aura 流 + 种子」缓存：只有用了光环才会变。
+let auraCache = { key: null, value: null };
+function auraPredict(s) {
+  const R = window.LuaJITRNG;
+  if (!R || !s?.run) return null;
+  const hs = parseFloat(s.run.hashed_seed);
+  if (!isFinite(hs)) return null;
+  const raw = s.rng?.streams?.aura;
+  const key = [raw, s.run.hashed_seed, s.run.seed].join("|");
+  if (auraCache.key === key) return auraCache.value;
+
+  // 本局还没用过光环 → 按 pseudoseed 的首次访问逻辑初始化
+  let st = raw != null ? parseFloat(raw) : R.pseudohash("aura" + (s.run.seed || ""));
+  if (!isFinite(st)) return null;
+
+  const list = [];
+  let nextPoly = null;
+  for (let n = 1; n <= AURA_SCAN && (n <= AURA_SHOW || nextPoly === null); n++) {
+    const r = R.nextDraw(st, hs);
+    st = r.state;
+    const ed = auraEdition(r.d);
+    if (ed.poly && nextPoly === null) nextPoly = n;
+    if (n <= AURA_SHOW) list.push({ n, d: r.d, ed });
+  }
+  const value = { list, nextPoly, fresh: raw == null };
+  auraCache = { key, value };
+  return value;
+}
+
+function auraHtml(s) {
+  const p = auraPredict(s);
+  if (!p) return "";
+  const head = p.nextPoly === null
+    ? `<span class="aura-note">${AURA_SCAN} 张内没有多彩</span>`
+    : (p.nextPoly === 1
+        ? `<span class="aura-next">下一张就是多彩 ★</span>`
+        : `<span class="aura-next">还差 ${p.nextPoly - 1} 张到多彩</span>`);
+  const cells = p.list.map(x =>
+    `<div class="aura-cell${x.ed.poly ? " poly" : ""}" title="d=${x.d.toFixed(6)}">
+       <div class="n">${x.ed.poly ? "★ " : ""}第 ${x.n} 张</div>
+       <div class="e ${x.ed.cls}">${x.ed.name}</div>
+     </div>`).join("");
+  return `<div class="sec-title2">
+      <span>光环预测</span><span class="line"></span>${head}
+    </div>
+    <div class="aura-strip">${cells}</div>
+    ${p.fresh ? '<div class="aura-note">本局还没用过光环，以上是从第一张算起</div>' : ""}`;
+}
+
+// ================= 负片标签覆盖 =================
+// 看手上的负片标签能把后面多少张商店小丑变成负片。纯前端：规则是确定的，也不影响随机数。
+//   · 商店每生成一张牌，按 G.GAME.tags 顺序找第一个能用的标签，用一个就停（UI_definitions.lua:851-856）
+//   · 这个时机只有闪箔/全息/多彩/负片四种标签响应（config.type = store_joker_modify，game.lua:232-235），
+//     而且只吃「没有版本的小丑」（tag.lua:417）；自带版本的小丑、塔罗/星球等都直接跳过
+//   · 双倍标签：拿到下一个（非双倍）标签时每个双倍各复制一份 —— add_tag 里的循环不 break（UI_definitions.lua:1436）
+//   · 套版本（set_edition）里没有任何 pseudo* 调用 → 队列本身不变，只是按顺序给普通版本小丑打标记
+let negOn = (() => { try { return localStorage.getItem("mjs_negcov") === "1"; } catch { return false; } })();
+window.toggleNegCov = () => {
+  negOn = !negOn;
+  try { localStorage.setItem("mjs_negcov", negOn ? "1" : "0"); } catch {}
+  draw();
+};
+
+const tagCount = (s, key) => (s?.owned?.tags || []).find(t => t.key === key)?.count || 0;
+// 算几个负片标签：已有的 +（按「下次跳过拿负片」算时）1 + 双倍标签数。
+// 手上有双倍标签（攒着就是为了复制下一个），或者一个负片都还没有 → 按「下次跳过拿负片」算；
+// 已经拿到负片、双倍也用完了 → 只算已有的（它们在商店里被用掉时，快照里的数量会跟着减少）。
+function negTagPlan(s) {
+  if ((s?.meta?.schema || 1) < 2) return null;   // 旧版 dump 还没有标签数据
+  const have = tagCount(s, "tag_negative"), dbl = tagCount(s, "tag_double");
+  const other = tagCount(s, "tag_foil") + tagCount(s, "tag_holo") + tagCount(s, "tag_polychrome");
+  const skip = dbl > 0 || have === 0;
+  const parts = [];
+  if (have) parts.push(`已有 ${have} 个`);
+  if (skip) parts.push("跳过拿 1 个");
+  if (skip && dbl) parts.push(`${dbl} 个双倍标签各复制 1 个`);
+  return { n: have + (skip ? 1 + dbl : 0), other, formula: parts.join(" + ") };
+}
+
+// 按生成顺序（R+1 第 1 格起）数「没有版本的小丑」：前 other 张先被闪箔/全息/多彩标签占用
+// （它们比新拿的负片排得靠前），之后依次用负片标签。返回 map：卡片对象 → 第几个负片标签。
+let covCache = {};
+function negCoverage(pred, plan) {
+  if (covCache.pred === pred && covCache.n === plan.n && covCache.other === plan.other) return covCache.value;
+  const map = new Map();
+  let base = 0, last = null, unknown = false;
+  scan: for (const rr of pred.rerolls) for (const c of rr.cards) {
+    if (c.set !== "Joker" || c.edition) continue;
+    if (c.editionUnknown) unknown = true;
+    const k = ++base - plan.other;
+    if (k < 1) continue;
+    if (k > plan.n) break scan;
+    map.set(c, k);
+    last = { r: rr.index, slot: c.slot };
+  }
+  const value = { map, last, leftover: plan.n - map.size, unknown };
+  covCache = { pred, n: plan.n, other: plan.other, value };
+  return value;
+}
+
+function negCovInfoHtml(pred, plan, cov) {
+  if (!plan) return `<div class="negcov-info"><small>需要重启游戏后才有标签数据</small></div>`;
+  const head = `负片标签 <b>${plan.n}</b> 个（${plan.formula}）`;
+  const res = !cov.map.size
+    ? `：展示的 ${pred.rerolls.length} 次 reroll 里用不上（没有轮到负片的普通版本小丑）`
+    : cov.leftover > 0
+    ? `：展示的 ${pred.rerolls.length} 次 reroll 里 <b>${cov.map.size}</b> 张普通版本小丑全部覆盖，还剩 <b>${cov.leftover}</b> 个`
+    : `：覆盖到 <b>R+${cov.last.r} 第 ${cov.last.slot} 格</b>`;
+  const notes = ["自带版本的小丑不吃标签，直接跳过", "从 R+1 算起"];
+  if (plan.other) notes.push(`你还有 ${plan.other} 个闪箔/全息/多彩标签，它们排在前面，会先用掉前 ${plan.other} 张（已扣除）`);
+  if (cov.unknown) notes.push("快照缺版本数据，没法排除自带版本的小丑，结果可能偏前");
+  notes.push("跳过大盲的话，下一个商店在打完 Boss 之后，底注 +1 换了一条队列（打完 Boss 页面会自动更新）");
+  return `<div class="negcov-info">${head}${res}<small>${notes.join("；")}</small></div>`;
+}
+
+// 预测队列 HTML：选定深度的全部 reroll 一次铺开（不分页）
+function queueHtml(pred) {
+  if (!pred?.rerolls?.length) {
+    return `<div class="sec-title">预测队列</div><div class="banner">暂无预测（需在局内，且快照里有卡池数据）</div>`;
+  }
+  const total = pred.rerolls.length;
+  // 深度：预设 + 自定义。当前深度不是预设值时，下拉框显示「自定义」并亮出输入框
+  const isPreset = DEPTH_PRESETS.includes(predDepth);
+  const depthSel = DEPTH_PRESETS.map(n =>
+    `<option value="${n}"${n === predDepth ? " selected" : ""}>${n}</option>`).join("")
+    + `<option value="custom"${isPreset ? "" : " selected"}>自定义</option>`;
+  const depthCtl = pred.local
+    ? `<span class="depth-ctl">深度 <select onchange="onDepthSelect(this.value)">${depthSel}</select>
+       <input id="depth-input" class="depth-input" type="number" min="1" max="${DEPTH_MAX}" step="1"
+              value="${predDepth}" title="1 ~ ${DEPTH_MAX}"${isPreset ? " hidden" : ""}
+              onchange="if (this.value.trim() === '') this.value = ${predDepth}; else setDepth(this.value)"
+              onkeydown="if (event.key === 'Enter') this.blur()"> 次</span>`
+    : "";
+  // 网格按「一个 reroll 块」的宽度排布，一行放几个由屏幕宽度自动决定。
+  // 块宽取决于商店槽位数，由 CSS 用 --slots 算出（见 .queue）。
+  const slots = Math.max(1, ...pred.rerolls.map(rr => rr.cards.length));
+  const plan = negOn ? negTagPlan(lastState) : null;
+  const cov = plan ? negCoverage(pred, plan) : null;
+  const negBtn = `<button class="negcov-btn${negOn ? " on" : ""}" onclick="toggleNegCov()"
+      title="按手上的负片标签（含双倍标签的复制），标出后面哪些商店小丑会变成负片">负片覆盖${negOn ? " ✓" : ""}</button>`;
+  let h = `<div class="sec-title2">
+      <span>预测队列 · 共 ${total} 次${pred.local ? "" : "（mod 端）"}</span>
+      <span class="line"></span>
+      <div class="pager">${negBtn}${depthCtl}</div>
+    </div>
+    ${negOn ? negCovInfoHtml(pred, plan, cov) : ""}
+    <div class="queue" style="--slots:${slots}">`;
+  for (const rr of pred.rerolls) {
+    h += `<div class="row">
+        <div class="rlabel">R+${rr.index}<small>reroll</small></div>
+        <div class="cards">${rr.cards.map(c => cardHtml(c, cov?.map.get(c))).join("")}</div>
+      </div>`;
+  }
+  return h + `</div>`;
+}
+
+// ================= 高亮关注 =================
+// 在一大堆 reroll 里快速找到想要的小丑：搜索（中/英文）→ 多选 → 队列和商店里对应卡片高亮。
+// 已选的用缩略图 + 「最早 R+N · 共几次」显示，点一下跳到它最早出现的位置（商店或队列）。
+// 高亮靠一段按 data-key 选中的动态 CSS —— 改关注列表不用重画上千张卡。
+let CATALOG = null;   // catalog.dat：全部小丑（含游戏内中文名），mod 每会话写一次
+let watched = (() => { try { const v = JSON.parse(localStorage.getItem("mjs_watch") || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } })();
+const saveWatched = () => { try { localStorage.setItem("mjs_watch", JSON.stringify(watched)); } catch {} };
+
+async function loadCatalog() {
+  try {
+    const r = await fetch("/catalog.dat?t=" + Date.now(), { cache: "no-store" });
+    if (r.ok) {
+      const c = await r.json();
+      if (Array.isArray(c.jokers) && c.jokers.length) { CATALOG = c.jokers; watchChipsSig = null; refreshWatch(); return; }
+    }
+  } catch {}
+  setTimeout(loadCatalog, 5000);   // 旧版 mod 没写过 / 还没进局 → 过一会儿再试
+}
+
+// 目录：优先 catalog.dat（全部小丑、带中文名）；没有时退回快照里池中的小丑（只有英文名）
+function catalogList() {
+  if (CATALOG) return CATALOG;
+  const out = [];
+  for (const [r, p] of Object.entries(lastState?.pools?.joker || {})) {
+    for (const k of p.pool || []) {
+      if (k !== "UNAVAILABLE") out.push({ key: k, name: LOC[k] || k, lname: null, rarity: +r, sprite: SPRITES[k], unlocked: true });
+    }
+  }
+  return out;
+}
+const catalogMap = () => new Map(catalogList().map(c => [c.key, c]));
+const displayName = (c) => c.lname || c.name || c.key;
+const rarityName = (r) => RARITY[String(r)]?.name || String(r ?? "");
+
+function applyWatchStyle() {
+  let el = document.getElementById("watch-style");
+  if (!el) { el = document.createElement("style"); el.id = "watch-style"; document.head.appendChild(el); }
+  if (!watched.length) { el.textContent = ""; return; }
+  const sel = (suffix) => watched.map(k => `.card[data-key="${CSS.escape(k)}"]${suffix}`).join(",");
+  const RAINBOW = "#ff4d6d,#ffd166,#2ee6a8,#4cc9f0,#b86bff,#ff4d6d";
+  el.textContent =
+    // 旋转的彩虹边框：画在卡片内侧的一圈（mask 挖掉中间），不碰卡自己的 border/box-shadow，
+    // 所以「自带负片」的紫色辉光、「负片标签」的虚线框和它能同时看到
+    `${sel("::before")}{content:"";position:absolute;inset:0;border-radius:inherit;padding:4px;z-index:4;pointer-events:none;` +
+      `background:conic-gradient(from var(--wa),${RAINBOW});` +
+      `-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);` +
+      `-webkit-mask-composite:xor;mask-composite:exclude;animation:watchspin 2.4s linear infinite}` +
+    // 外发光循环换色。自带负片的卡保留它自己的紫色脉动（两者都用 box-shadow，只能留一个）
+    `${sel(":not(.negative)")}{animation:watchglow 2.4s linear infinite}` +
+    // 跳转时的闪动和发光同时进行（否则上面那条优先级更高，会把闪动盖掉）
+    `${sel(":not(.negative).flash")}{animation:watchflash .55s ease 2,watchglow 2.4s linear infinite}` +
+    `${sel("::after")}{content:"★ 关注";position:absolute;right:0;bottom:0;z-index:5;` +
+      `background:linear-gradient(90deg,${RAINBOW});background-size:300% 100%;animation:watchbadge 2.4s linear infinite;` +
+      `color:#1a1020;font-size:11px;font-weight:800;padding:3px 9px;border-top-left-radius:9px}`;
+}
+
+// 某次预测里每张卡「最早在第几次 reroll 出现、共出现几次」（按预测对象缓存）
+// 注意 pred 可能是 undefined（页面刚打开、队列还没画时已选条先画一次），所以命中缓存还要求 map 已建过
+let occCache = { pred: undefined, map: null };
+function occurrences(pred) {
+  if (occCache.map && occCache.pred === pred) return occCache.map;
+  const map = new Map();
+  for (const rr of pred?.rerolls || []) for (const c of rr.cards) {
+    if (!c.key) continue;
+    const o = map.get(c.key);
+    if (o) o.count++; else map.set(c.key, { first: rr.index, count: 1 });
+  }
+  occCache = { pred, map };
+  return map;
+}
+
+function watchChipsHtml() {
+  if (!watched.length) return `<span class="watch-empty">还没有关注的小丑 —— 在搜索框里输入名字，点击结果即可添加（可多选）</span>`;
+  const cat = catalogMap(), occ = occurrences(lastQueuePred);
+  const inShop = new Set((lastState?.shop?.jokers || []).map(c => c.key));
+  const inPool = new Set();
+  for (const p of Object.values(lastState?.pools?.joker || {})) for (const k of p.pool || []) if (k !== "UNAVAILABLE") inPool.add(k);
+  const depth = lastQueuePred?.rerolls?.length || 0;
+  return watched.map(k => {
+    const c = cat.get(k) || { key: k, name: k };
+    const o = occ.get(k);
+    // 传奇不在商店的稀有度表里（poll_config.joker_rarities 只有普通/罕见/稀有），只能靠灵魂牌开出
+    const legendary = String(c.rarity) === "4" || c.rarity === "Legendary";
+    let info;
+    if (inShop.has(k))                            info = `<small class="now">当前商店里就有！</small>`;
+    else if (o)                                   info = `<small class="hit">最早 R+${o.first} · 共 ${o.count} 次</small>`;
+    else if (legendary)                           info = `<small title="传奇小丑不在商店的稀有度表里，只能从灵魂牌（The Soul）开出">传奇 · 商店不会出现</small>`;
+    else if (lastState?.pools && !inPool.has(k))  info = `<small>不在当前卡池（已拥有、未解锁等）</small>`;
+    else                                          info = `<small>${depth} 次内未出现</small>`;
+    return `<div class="watch-chip" data-key="${esc(k)}" title="点击跳到它最早出现的位置（商店或队列）">
+        ${spriteHtml(c.sprite, 0.5) || ""}
+        <div><b>${esc(displayName(c))}</b>${info}</div>
+        <button class="x" data-remove="${esc(k)}" title="取消关注">×</button>
+      </div>`;
+  }).join("");
+}
+
+// ---- 搜索下拉 ----
+let ddActive = 0;
+function searchResults(q) {
+  q = q.trim().toLowerCase();
+  const hit = (c) => !q || [c.lname, c.name, c.key].some(v => v && v.toLowerCase().includes(q));
+  const starts = (c) => q && [c.lname, c.name].some(v => v && v.toLowerCase().startsWith(q)) ? 0 : 1;
+  return catalogList().filter(hit).sort((a, b) =>
+    starts(a) - starts(b) || (Number(a.rarity) || 0) - (Number(b.rarity) || 0)
+    || displayName(a).localeCompare(displayName(b), "zh"));
+}
+function renderDropdown() {
+  const dd = document.getElementById("watch-dd"), input = document.getElementById("watch-input");
+  if (!dd || !input) return;
+  const res = searchResults(input.value);
+  ddActive = Math.min(ddActive, Math.max(0, res.length - 1));
+  dd.innerHTML = res.length ? res.map((c, i) => {
+    const cls = "dd-item" + (watched.includes(c.key) ? " selected" : "") + (i === ddActive ? " active" : "")
+              + (c.unlocked === false ? " locked" : "");
+    const sub = [c.lname ? c.name : "", rarityName(c.rarity), c.unlocked === false ? "未解锁" : ""].filter(Boolean).join(" · ");
+    return `<div class="${cls}" data-key="${esc(c.key)}">
+        ${spriteHtml(c.sprite, 0.42) || ""}
+        <div><b>${esc(displayName(c))}</b><small>${esc(sub)}</small></div>
+        <span class="check">✓</span>
+      </div>`;
+  }).join("") : `<div class="dd-none">没有匹配的小丑</div>`;
+  dd.hidden = false;
+  dd.querySelector(".dd-item.active")?.scrollIntoView({ block: "nearest" });
+}
+
+function toggleWatch(key) {
+  const i = watched.indexOf(key);
+  if (i >= 0) watched.splice(i, 1); else watched.push(key);
+  saveWatched(); applyWatchStyle(); refreshWatch();
+  if (!document.getElementById("watch-dd")?.hidden) renderDropdown();
+}
+
+// 跳到它最早出现的那张卡：当前商店在页面上方、队列在下方，按文档顺序取第一张正好是「最早」
+function jumpTo(key) {
+  const el = document.querySelector(`#app .card[data-key="${CSS.escape(key)}"]`);
+  if (!el) return;
+  // 队列行用了 content-visibility：屏幕外的行先按估算高度排，滚过去后附近的行才真正渲染，
+  // 高度一变目标就会偏。所以滚完隔一小会儿检查，偏了就再校准（最多几次）。
+  // 用定时器而不是 requestAnimationFrame：页面在后台时 rAF 根本不触发。
+  let n = 0;
+  const align = () => {
+    el.scrollIntoView({ block: "center" });
+    if (++n < 4) setTimeout(() => {
+      const b = el.getBoundingClientRect();
+      if (b.top < 0 || b.bottom > innerHeight) align();
+    }, 80);
+  };
+  align();
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  el.addEventListener("animationend", () => el.classList.remove("flash"), { once: true });
+}
+
+// 已选条只在相关数据变了时重建：打牌时快照每秒一更新，不能每次都重建（还会吞掉点击）
+let watchChipsSig = null;
+function refreshWatch() {
+  const chips = document.getElementById("watch-chips");
+  if (!chips) return;
+  const sig = JSON.stringify([watched, !!CATALOG, predSerial, (lastState?.shop?.jokers || []).map(c => c.key)]);
+  if (sig === watchChipsSig) return;
+  watchChipsSig = sig;
+  chips.innerHTML = watchChipsHtml();
+  document.getElementById("watch-title").textContent = watched.length ? `高亮关注 · ${watched.length} 张` : "高亮关注";
+}
+
+// 关注区是常驻 DOM（不随快照重画）—— 否则打字时每秒被重建一次，焦点和输入都会丢
+function initWatchUI(root) {
+  root.innerHTML = `<div class="sec-title2"><span id="watch-title">高亮关注</span><span class="line"></span></div>
+    <div class="watch">
+      <div class="watch-search">
+        <input id="watch-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="搜索小丑（中文 / 英文），点击添加，可多选">
+        <div id="watch-dd" class="watch-dd" hidden></div>
+      </div>
+      <div id="watch-chips" class="watch-chips"></div>
+    </div>`;
+  const input = root.querySelector("#watch-input"), dd = root.querySelector("#watch-dd");
+  input.addEventListener("focus", () => { ddActive = 0; renderDropdown(); });
+  input.addEventListener("input", () => { ddActive = 0; renderDropdown(); });
+  input.addEventListener("blur", () => { dd.hidden = true; });
+  input.addEventListener("keydown", (e) => {
+    const n = dd.querySelectorAll(".dd-item").length;
+    if (e.key === "ArrowDown")      { ddActive = Math.min(n - 1, ddActive + 1); renderDropdown(); e.preventDefault(); }
+    else if (e.key === "ArrowUp")   { ddActive = Math.max(0, ddActive - 1); renderDropdown(); e.preventDefault(); }
+    else if (e.key === "Enter")     { const it = dd.querySelectorAll(".dd-item")[ddActive]; if (it) toggleWatch(it.dataset.key); e.preventDefault(); }
+    else if (e.key === "Escape")    { dd.hidden = true; input.blur(); }
+  });
+  // mousedown + preventDefault：点选时输入框不失焦，下拉保持打开，方便连续多选
+  dd.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    const it = e.target.closest(".dd-item");
+    if (it) toggleWatch(it.dataset.key);
+  });
+  root.querySelector("#watch-chips").addEventListener("click", (e) => {
+    const rm = e.target.closest("[data-remove]");
+    if (rm) { e.stopPropagation(); toggleWatch(rm.dataset.remove); return; }
+    const chip = e.target.closest(".watch-chip");
+    if (chip) jumpTo(chip.dataset.key);
+  });
+  watchChipsSig = null;
+  refreshWatch();
+}
+
+// 商店队列：优先用网页端自己算（不受 mod 预算深度限制），算不了才回退到 mod 端结果。
+// 深度可选预设或自定义。上限 2000：实测耗时与深度线性（约 0.08ms/次 reroll，含渲染），
+// 2000 次约 0.16s；5000 次约 0.4s 且有 15 万个 DOM 节点，每次 reroll 都会明显卡一下。
+const DEPTH_PRESETS = [10, 20, 40, 80, 160, 400];
+const DEPTH_MAX = 2000;
+// 非数字（空/乱填）回落到 40；数字一律夹到 [1, DEPTH_MAX]
+const clampDepth = (n) => { const v = Math.floor(+n); return Number.isFinite(v) ? Math.min(DEPTH_MAX, Math.max(1, v)) : 40; };
+let predDepth = (() => { try { return clampDepth(localStorage.getItem("mjs_depth") || 40); } catch { return 40; } })();
+window.setDepth = (n) => {
+  predDepth = clampDepth(n);
+  try { localStorage.setItem("mjs_depth", predDepth); } catch {}
+  draw();
+};
+// 选「自定义」时只是亮出输入框，真正生效等输入完（回车或点别处）
+window.onDepthSelect = (v) => {
+  if (v !== "custom") return setDepth(+v);
+  const el = document.getElementById("depth-input");
+  if (el) { el.hidden = false; el.focus(); el.select(); }
+};
+// 缓存（修复 #5）：不能用 dumped_at 做 key —— 打牌时快照约每秒更新一次（幸运牌之类会推进 RNG），
+// 但商店队列依赖的流其实没动，按 dumped_at 失效就是每秒白算一遍（深度 400 实测 67ms，卡住页面）。
+// 现在：非流的输入（种子/池子/权重/槽位/深度…）拼成签名；流只核对这次预测**真正读过**的那些
+// （predict.js 返回的 deps）。两者都没变 → 结果必然不变 → 直接复用。
+let predCache = null;
+function predInputSig(s) {
+  return JSON.stringify([
+    s.run?.seed, s.run?.hashed_seed, s.run?.ante, s.shop?.joker_max, predDepth,
+    s.rates, s.rarity, s.poll_config, s.pools, s.editions,
+    (s.pool_state?.used_vouchers || []).includes("v_illusion"),
+  ]);
+}
+function depsUnchanged(deps, s) {
+  const st = s.rng?.streams || {};
+  for (const k in deps) if ((st[k] ?? null) !== deps[k]) return false;
+  return true;
+}
+function computePrediction(s) {
+  const sig = predInputSig(s);
+  if (predCache && predCache.sig === sig && depsUnchanged(predCache.deps, s)) return predCache.value;
+  let result = s.prediction;
+  try {
+    if (window.MJSPredict && s.pools && s.rng?.streams) {
+      const t0 = performance.now();
+      const p = window.MJSPredict.predict(s, predDepth);
+      if (p?.rerolls?.length) { p.local = true; p.computeMs = performance.now() - t0; result = p; }
+    }
+  } catch (e) { console.warn("网页端预测失败，回退 mod 端:", e); }
+  // 只缓存网页端结果（回退到 mod 端时没有 deps 可核对，每次直接读快照里的即可，本身不花时间）
+  predCache = result?.local ? { sig, deps: result.deps || {}, value: result } : null;
+  return result;
+}
+
+function draw() {
+  const s = lastState; if (!s) return;
+  LOC = s.loc || {}; SPRITES = s.sprites || {};
+  const run = s.run || {}, shop = s.shop || {}, pred = computePrediction(s);
+  const app = document.getElementById("app");
+
+  const mods = [];
+  if (shop.joker_max != null) mods.push(`槽位 ${shop.joker_max}`);
+  (s.pool_state?.used_vouchers || []).includes("v_illusion") && mods.push("幻象券");
+  if (s.rates?.edition > 1) mods.push(`版本率 ×${s.rates.edition}`);
+  if (s.pool_state?.showman) mods.push("演出家");
+
+  let html = `<header>
+    <div class="stat"><small>种子</small><b>${esc(run.seed || "?")}</b></div>
+    <div class="stat"><small>底注 Ante</small><b>${run.ante ?? "?"}</b></div>
+    <div class="stat"><small>金钱</small><b>$${run.dollars ?? "?"}</b></div>
+    <div class="stat"><small>下次 Reroll</small><b>$${shop.reroll_cost ?? "?"}</b></div>
+    <div class="grow"></div>
+    <div class="mods">${mods.map(m => `<span class="tag">${esc(m)}</span>`).join("")}</div>
+  </header>`;
+
+  // 当前标签
+  // + 光环预测：两块内容都很少，并排放一行（窄屏自动变成上下）。
+  // 光环是网页端直接算的，不依赖 mod 是否在商店里。
+  html += `<div class="duo"><div>${tagsHtml(s)}</div><div>${auraHtml(s)}</div></div>`;
+
+  // 当前商店（居中）
+  const cur = shop.jokers || [];
+  html += `<div class="sec-title">当前商店</div><div class="row shop-row"><div class="cards">
+    ${cur.length ? cur.map(c => cardHtml(c)).join("") : '<div class="banner" style="flex:1">当前不在商店</div>'}
+  </div></div>`;
+
+  // 页面分两块：上半部分（标题/标签/光环/商店）每次快照都重画；
+  // 队列可能多达 1600 张卡（深度 400），只在预测结果真的变了时才重画 ——
+  // computePrediction 在依赖没变时返回同一个对象，所以按对象身份判断即可。
+  // 否则打牌时快照每秒一变，就要每秒重建上千张卡。
+  // 中间的关注区（搜索框 + 已选条）是常驻的：只建一次，之后只更新已选条内容。
+  let top = document.getElementById("top"), wroot = document.getElementById("watch-root"),
+      qroot = document.getElementById("queue-root");
+  if (!top || !wroot || !qroot) {
+    app.innerHTML = `<div id="top"></div><div id="watch-root"></div><div id="queue-root"></div>`;
+    top = document.getElementById("top"); wroot = document.getElementById("watch-root");
+    qroot = document.getElementById("queue-root");
+    lastQueuePred = undefined;
+    initWatchUI(wroot);
+  }
+  top.innerHTML = html;
+  // 负片覆盖的标记也画在队列里：开关、标签数量（用掉一个就少一个）变了也要重画
+  const covSig = negOn ? JSON.stringify(negTagPlan(s)) : "";
+  if (pred !== lastQueuePred || covSig !== lastCovSig) {
+    qroot.innerHTML = queueHtml(pred);
+    lastQueuePred = pred;
+    lastCovSig = covSig;
+    predSerial++;
+  }
+  refreshWatch();
+
+  // 显示实际算预测的耗时：网页端算的就显示网页端耗时（mod 端预测默认已关）
+  const pm = pred?.local ? pred.computeMs : s.meta?.predict_ms;
+  document.getElementById("meta").textContent =
+    `Ante ${run.ante ?? "?"} · 预测 ${pred?.count || pred?.rerolls?.length || 0} 次`
+    + (pm != null ? ` · ${pred?.local ? "网页端" : "mod 端"}算 ${(+pm).toFixed(1)}ms` : "")
+    + ` · 快照 @ ${new Date((s.meta?.dumped_at || 0) * 1000).toLocaleTimeString()}`;
+}
+
+let lastStamp = null;
+async function poll() {
+  const dot = document.getElementById("dot"), status = document.getElementById("status");
+  let s;
+  try {
+    const r = await fetch("/state.dat?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    s = await r.json();
+  } catch (e) {
+    dot.className = "dot bad";
+    status.textContent = "无法读取 state.dat（游戏在运行吗？在局内吗？）— " + e.message;
+    return;
+  }
+  const stamp = s.meta?.dumped_at + "|" + JSON.stringify(s.shop?.jokers) + "|" + (s.prediction?.rerolls?.length);
+  if (stamp !== lastStamp) {
+    // 画成功才记下这份快照：画的时候出错就下一秒重试并把错误显示出来，
+    // 而不是记下「已处理」后一直空白，直到游戏写出新快照
+    try { render(s); lastStamp = stamp; }
+    catch (e) {
+      console.error("渲染失败:", e);
+      dot.className = "dot bad";
+      status.textContent = "页面渲染出错（每秒重试，详情见控制台）— " + e.message;
+      return;
+    }
+  }
+  dot.className = "dot ok";
+  status.textContent = "已连接";
+}
+applyWatchStyle();   // 上次保存的关注列表，页面一打开就生效
+loadCatalog();       // 小丑目录只拉一次（拿不到就每 5 秒重试）
+poll();
+setInterval(poll, 1000);
+</script>
+</body>
+</html>
